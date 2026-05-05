@@ -6,14 +6,16 @@ Personal knowledge management repo — scripts and automation for [Anytype](http
 
 ```
 knowledge/
-├── categorize.py        # Parse Firefox export + LLM tagging → data/categorized.json
-├── import.py            # Python runner for helper-backed Anytype import
-├── import_anytype.js    # Anytype sync via anytypeHelper.js
-├── deduplicate_anytype.js # Archive duplicate Anytype bookmarks by source URL
-├── fetch_markdown.py    # URL -> markdown via Jina Reader (r.jina.ai)
-├── enrich.py            # LLM triage + summary + keywords per bookmark
-├── synthesize.py        # Cluster enriched bookmarks into topic guides
-├── sync_synthesis_anytype.js # Create/update Anytype topic guide pages
+├── pipeline.py          # single entrypoint CLI
+├── src/knowledge_pipeline/
+│   ├── categorize.py
+│   ├── import.py
+│   ├── import_anytype.js
+│   ├── deduplicate_anytype.js
+│   ├── fetch_markdown.py
+│   ├── enrich.py
+│   ├── synthesize.py
+│   └── sync_synthesis_anytype.js
 ├── pyproject.toml       # uv project + dependencies
 ├── .env                 # API keys (gitignored)
 └── data/                # gitignored — drop input files here
@@ -61,11 +63,8 @@ Save as `data/bookmarks.html`.
 Parses the HTML export and calls Blablador to match/propose tags:
 
 ```bash
-uv run categorize.py                  # full run
-uv run categorize.py --dry-run        # show LLM prompt, no API calls
-uv run categorize.py --resume         # continue interrupted run
-uv run categorize.py --skip-parse     # reuse existing bookmarks.json
-uv run categorize.py --batch-size 5   # smaller batches
+uv run pipeline.py parse
+uv run pipeline.py categorize --resume
 ```
 
 Output: `data/categorized.json`
@@ -78,12 +77,9 @@ Syncs categorized bookmarks into Anytype through `anytype-agent-runtime` and
 `~/Personal/anytype-agents-skill/anytypeHelper.js`:
 
 ```bash
-uv run import.py --report             # diff what will change, then confirm
-uv run import.py --dry-run            # report only, no changes at all
-uv run import.py --report --yes       # report then sync without prompting
-uv run import.py --verify             # sync then verify all bookmarks exist
-uv run import.py --limit 10 --report  # test with first 10 bookmarks
-uv run import.py -v                   # full sync, verbose
+uv run pipeline.py sync --report --yes
+uv run pipeline.py sync --with-pages --report --yes
+uv run pipeline.py verify
 ```
 
 `--report` shows a pre-sync breakdown (N to create, M to update, K to skip) before asking
@@ -93,7 +89,7 @@ a sync run.
 You can also run the JS backbone directly:
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill import_anytype.js input=@data/categorized.json mode=report
+anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_pipeline/import_anytype.js input=@data/categorized.json mode=report
 ```
 
 ### Duplicate cleanup
@@ -101,13 +97,13 @@ anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill import_anytype.
 Preview duplicate bookmark objects grouped by `source` URL:
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill deduplicate_anytype.js
+anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_pipeline/deduplicate_anytype.js
 ```
 
 Archive duplicate objects, keeping the first object for each URL:
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill deduplicate_anytype.js yes=true
+anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_pipeline/deduplicate_anytype.js yes=true
 ```
 
 ---
@@ -116,27 +112,27 @@ anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill deduplicate_any
 
 This extends plain bookmark import into a quick synthesis flow.
 
-### Step A — Fetch page markdown (Jina Reader)
+### Step A — Fetch page markdown (local Trafilatura)
 
 ```bash
-uv run fetch_markdown.py
-uv run fetch_markdown.py --limit 50
-uv run fetch_markdown.py --resume
-uv run fetch_markdown.py --resume --workers 12
+uv run pipeline.py enrich --workers 12
+uv run pipeline.py enrich --limit 50 --workers 12
+uv run pipeline.py enrich --workers 12 --fetch-backend trafilatura
+uv run pipeline.py enrich --workers 8 --fetch-backend auto
 ```
 
 Input: `data/categorized.json`  
 Output manifest: `data/fetched_markdown.json`  
 Markdown cache: `data/markdown_cache/*.md`
 
-If a URL does not parse well in Jina, we leave it as-is and keep moving.
+Default backend is local `trafilatura` (no cloud service required). Use `--fetch-backend auto`
+to try trafilatura first and fall back to Jina only when needed.
 
 ### Step B — Enrich with Blablador
 
 ```bash
-uv run enrich.py
-uv run enrich.py --limit 100
-uv run enrich.py --resume
+uv run pipeline.py enrich --workers 12
+uv run pipeline.py enrich --limit 100 --workers 12
 ```
 
 Model: `alias-qwen36-35b`  
@@ -151,23 +147,27 @@ Each item gets:
 ### Step C — Build topic guides
 
 ```bash
-uv run synthesize.py
-uv run synthesize.py --min-items 3
+uv run pipeline.py enrich --min-items 3
 ```
 
 Output manifest: `data/topic_guides.json`  
 Guide markdown files: `data/topic_guides/*.md`
 
+By default, synthesis groups enriched bookmarks into broad topic families such as
+`Helmholtz and HMC`, `AI, LLMs, and Scientific Agents`, and
+`Research Data Management and FAIR Practice`. The original LLM `topic_label`
+values are retained as subtopics inside each guide.
+
 ### Step D — Sync topic pages to Anytype
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill sync_synthesis_anytype.js input=@data/topic_guides.json dryRun=true withObjectLinks=true
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill sync_synthesis_anytype.js input=@data/topic_guides.json withObjectLinks=true
+uv run pipeline.py sync --with-pages --dry-run
+uv run pipeline.py sync --with-pages --report --yes
 ```
 
 Behavior:
-- Creates or updates `page` objects named `Topic Guide: <topic>`
-- Optionally embeds matched Anytype bookmark object IDs in each page (`withObjectLinks=true`)
+- Creates or updates `page` objects named `Web Topic: <topic>`
+- Links topic pages to matched bookmarks with real Anytype object relations (`withObjectLinks=true`)
 - Uses `anytypeHelper.js` as the only API backbone
 
 ---

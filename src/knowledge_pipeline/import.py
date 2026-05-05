@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 HELPER_DIR = Path("/home/casas/Personal/anytype-agents-skill")
 RUNTIME_CANDIDATES = [
     shutil.which("anytype-agent-runtime"),
@@ -29,7 +29,7 @@ def runtime_path() -> str:
 def run_runtime(args: argparse.Namespace, mode: str) -> dict:
     categorized = REPO_ROOT / "data" / "categorized.json"
     if not categorized.exists():
-        print(f"ERROR: {categorized} not found. Run 'uv run categorize.py' first.", file=sys.stderr)
+        print(f"ERROR: {categorized} not found. Run 'uv run pipeline.py categorize' first.", file=sys.stderr)
         sys.exit(1)
 
     cmd = [
@@ -38,7 +38,7 @@ def run_runtime(args: argparse.Namespace, mode: str) -> dict:
         str(REPO_ROOT / ".env"),
         "-m",
         str(HELPER_DIR),
-        str(REPO_ROOT / "import_anytype.js"),
+        str(REPO_ROOT / "src" / "knowledge_pipeline" / "import_anytype.js"),
         f"input=@{categorized}",
         f"mode={mode}",
     ]
@@ -50,24 +50,42 @@ def run_runtime(args: argparse.Namespace, mode: str) -> dict:
         cmd.append("verify=true")
     if args.dry_run:
         cmd.append("dryRun=true")
+    cmd.append(f"retryCount={args.retry_count}")
+    cmd.append(f"retryDelayMs={args.retry_delay_ms}")
 
-    completed = subprocess.run(cmd, cwd=REPO_ROOT, text=True, capture_output=True, check=False)
-    if completed.stdout:
-        print(completed.stdout, end="")
-    if completed.stderr:
-        print(completed.stderr, end="", file=sys.stderr)
-    if completed.returncode != 0:
-        sys.exit(completed.returncode)
+    proc = subprocess.Popen(
+        cmd,
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
 
-    for line in completed.stdout.splitlines():
-        if line.startswith("res: "):
-            raw = line[5:]
-            try:
-                return json.loads(raw)
-            except json.JSONDecodeError:
-                if raw.startswith('"') and raw.endswith('"'):
-                    return json.loads(json.loads(raw))
-                raise
+    parsed_result: dict = {}
+
+    def _drain(stream) -> None:
+        nonlocal parsed_result
+        for line in stream:
+            print(line, end="")
+            if line.startswith("res: "):
+                raw = line[5:].strip()
+                try:
+                    parsed_result = json.loads(raw)
+                except json.JSONDecodeError:
+                    if raw.startswith('"') and raw.endswith('"'):
+                        parsed_result = json.loads(json.loads(raw))
+                    else:
+                        raise
+
+    assert proc.stdout is not None
+    _drain(proc.stdout)
+
+    returncode = proc.wait()
+    if returncode != 0:
+        sys.exit(returncode)
+
+    if parsed_result:
+        return parsed_result
     return {}
 
 
@@ -95,6 +113,8 @@ def main() -> None:
     parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
     parser.add_argument("--limit", type=int, default=0, help="Process only first N bookmarks")
     parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--retry-count", type=int, default=4, help="Retries per write on rate limit")
+    parser.add_argument("--retry-delay-ms", type=int, default=1200, help="Base backoff delay in milliseconds")
     args = parser.parse_args()
 
     if args.verify and not args.report and not args.dry_run:
@@ -112,6 +132,7 @@ def main() -> None:
             print("\n[DRY RUN] No changes made.")
             return
         if not args.yes:
+            print("\nWaiting for confirmation: type 'y' then Enter to start writes.")
             try:
                 answer = input("\nProceed with sync? [y/N] ").strip().lower()
             except (EOFError, KeyboardInterrupt):

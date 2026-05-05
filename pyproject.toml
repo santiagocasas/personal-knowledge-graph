@@ -8,12 +8,8 @@ dependencies = [
     "lxml>=5.0.0",
     "python-dotenv>=1.0.0",
     "requests>=2.31.0",
+    "trafilatura>=1.12.2",
 ]
 
 [project.scripts]
-categorize = "categorize:main"
-import-bookmarks = "import:main"
-fetch-markdown = "fetch_markdown:main"
-enrich-bookmarks = "enrich:main"
-synthesize-guides = "synthesize:main"
 knowledge-pipeline = "pipeline:main"

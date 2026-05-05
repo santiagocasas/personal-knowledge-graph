@@ -14,7 +14,7 @@ import requests
 from dotenv import load_dotenv
 
 
-REPO_ROOT = Path(__file__).parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
 BLABLADOR_BASE_URL = "https://api.helmholtz-blablador.fz-juelich.de/v1"
@@ -23,6 +23,12 @@ BLABLADOR_API_KEY = os.getenv("BLABLADOR_API_KEY", "")
 
 DEFAULT_INPUT = REPO_ROOT / "data" / "fetched_markdown.json"
 DEFAULT_OUTPUT = REPO_ROOT / "data" / "enriched_bookmarks.json"
+
+
+def write_json_atomic(path: Path, payload: list[dict]) -> None:
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2, ensure_ascii=True), encoding="utf-8")
+    tmp_path.replace(path)
 
 
 def llm_chat(messages: list[dict], retries: int = 3) -> str:
@@ -100,6 +106,7 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--delay", type=float, default=0.3)
+    parser.add_argument("--save-every", type=int, default=10)
     args = parser.parse_args()
 
     rows = json.loads(args.input.read_text(encoding="utf-8"))
@@ -114,61 +121,74 @@ def main() -> None:
     enriched: list[dict] = []
     triage_counts: dict[str, int] = {}
 
-    for idx, item in enumerate(rows, start=1):
-        url = item.get("url", "")
-        title = item.get("title", "Untitled")
+    try:
+        for idx, item in enumerate(rows, start=1):
+            url = item.get("url", "")
+            title = item.get("title", "Untitled")
 
-        if args.resume and url in previous:
-            enriched.append(previous[url])
-            triage = previous[url].get("triage", "other")
-            triage_counts[triage] = triage_counts.get(triage, 0) + 1
-            continue
+            if args.resume and url in previous:
+                enriched.append(previous[url])
+                triage = previous[url].get("triage", "other")
+                triage_counts[triage] = triage_counts.get(triage, 0) + 1
+                continue
 
-        base = dict(item)
-        base.update({
-            "triage": "other",
-            "synthesis_summary": "",
-            "keywords": [],
-            "topic_label": "misc",
-            "enrich_ok": False,
-            "enrich_error": "",
-        })
+            base = dict(item)
+            base.update({
+                "triage": "other",
+                "synthesis_summary": "",
+                "keywords": [],
+                "topic_label": "misc",
+                "enrich_ok": False,
+                "enrich_error": "",
+            })
 
-        if not item.get("fetch_ok"):
-            base["enrich_error"] = "missing_markdown"
+            if not item.get("fetch_ok"):
+                base["enrich_error"] = "missing_markdown"
+                enriched.append(base)
+                triage_counts["other"] = triage_counts.get("other", 0) + 1
+                if not args.dry_run and args.save_every > 0 and len(enriched) % args.save_every == 0:
+                    write_json_atomic(args.output, enriched)
+                    print(f"checkpoint saved: {len(enriched)}/{len(rows)}", flush=True)
+                continue
+
+            print(f"[{idx}/{len(rows)}] enrich {title}")
+            if args.dry_run:
+                base["enrich_error"] = "dry_run"
+                enriched.append(base)
+                triage_counts["other"] = triage_counts.get("other", 0) + 1
+                continue
+
+            cache_path = REPO_ROOT / item["cache_path"]
+            markdown = cache_path.read_text(encoding="utf-8") if cache_path.exists() else ""
+            try:
+                raw = llm_chat(build_messages(item, markdown))
+                data = parse_json_object(raw)
+                triage = data.get("triage", "other")
+                if triage not in {"knowledge_resource", "tool", "login_page", "admin_page", "other"}:
+                    triage = "other"
+                base["triage"] = triage
+                base["synthesis_summary"] = (data.get("summary", "") or "").strip()
+                base["keywords"] = normalize_keywords(data.get("keywords", []))
+                base["topic_label"] = (data.get("topic_label", "misc") or "misc").strip()
+                base["enrich_ok"] = True
+            except Exception as exc:  # noqa: BLE001
+                base["enrich_error"] = str(exc)
+
             enriched.append(base)
-            triage_counts["other"] = triage_counts.get("other", 0) + 1
-            continue
+            triage_counts[base["triage"]] = triage_counts.get(base["triage"], 0) + 1
 
-        print(f"[{idx}/{len(rows)}] enrich {title}")
-        if args.dry_run:
-            base["enrich_error"] = "dry_run"
-            enriched.append(base)
-            triage_counts["other"] = triage_counts.get("other", 0) + 1
-            continue
-
-        cache_path = REPO_ROOT / item["cache_path"]
-        markdown = cache_path.read_text(encoding="utf-8") if cache_path.exists() else ""
-        try:
-            raw = llm_chat(build_messages(item, markdown))
-            data = parse_json_object(raw)
-            triage = data.get("triage", "other")
-            if triage not in {"knowledge_resource", "tool", "login_page", "admin_page", "other"}:
-                triage = "other"
-            base["triage"] = triage
-            base["synthesis_summary"] = (data.get("summary", "") or "").strip()
-            base["keywords"] = normalize_keywords(data.get("keywords", []))
-            base["topic_label"] = (data.get("topic_label", "misc") or "misc").strip()
-            base["enrich_ok"] = True
-        except Exception as exc:  # noqa: BLE001
-            base["enrich_error"] = str(exc)
-
-        enriched.append(base)
-        triage_counts[base["triage"]] = triage_counts.get(base["triage"], 0) + 1
-        time.sleep(args.delay)
+            if not args.dry_run and args.save_every > 0 and len(enriched) % args.save_every == 0:
+                write_json_atomic(args.output, enriched)
+                print(f"checkpoint saved: {len(enriched)}/{len(rows)}", flush=True)
+            time.sleep(args.delay)
+    except KeyboardInterrupt:
+        if not args.dry_run:
+            write_json_atomic(args.output, enriched)
+            print(f"\nInterrupted. Saved partial progress: {len(enriched)}/{len(rows)}")
+        raise
 
     if not args.dry_run:
-        args.output.write_text(json.dumps(enriched, indent=2, ensure_ascii=True), encoding="utf-8")
+        write_json_atomic(args.output, enriched)
 
     print("\nEnrichment summary:")
     print(f"  Input rows : {len(rows)}")

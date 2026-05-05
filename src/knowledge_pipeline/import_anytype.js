@@ -4,6 +4,40 @@ function boolArg(value) {
   return value === true || value === "true" || value === "1" || value === "yes";
 }
 
+function sleepMs(ms) {
+  var start = Date.now();
+  while (Date.now() - start < ms) {
+    // busy wait (goja runtime has no blocking sleep)
+  }
+}
+
+function errorText(res) {
+  if (!res) return "unknown error";
+  if (typeof res.error === "string") return res.error;
+  if (res.error && typeof res.error.message === "string") return res.error.message;
+  return "unknown error";
+}
+
+function isRateLimitError(res) {
+  var msg = errorText(res).toLowerCase();
+  return msg.indexOf("maximum request limit") >= 0 || msg.indexOf("rate_limit") >= 0 || msg.indexOf("429") >= 0;
+}
+
+function writeWithRetry(writeFn, retryCount, baseDelayMs) {
+  var attempt = 0;
+  var res;
+  while (attempt <= retryCount) {
+    res = writeFn();
+    if (res && res.ok) return res;
+    if (!isRateLimitError(res) || attempt === retryCount) return res;
+    var waitMs = baseDelayMs * Math.pow(2, attempt);
+    console.log("rate-limited; retrying in " + waitMs + "ms");
+    sleepMs(waitMs);
+    attempt += 1;
+  }
+  return res;
+}
+
 function intArg(value, fallback) {
   var parsed = parseInt(value || "", 10);
   return isNaN(parsed) ? fallback : parsed;
@@ -155,7 +189,7 @@ function plan(bookmarks, index, tags) {
 function syncBookmarks(client, bookmarks, options) {
   var index = indexBookmarks(client);
   var tags = tagLookup(client);
-  var stats = { created: 0, updated: 0, unchanged: 0, skipped: 0, errors: 0 };
+  var stats = { created: 0, updated: 0, unchanged: 0, skipped: 0, errors: 0, retried: 0, rate_limited: 0 };
 
   for (var i = 0; i < bookmarks.length; i++) {
     var bookmark = bookmarks[i];
@@ -183,16 +217,14 @@ function syncBookmarks(client, bookmarks, options) {
         stats.unchanged += 1;
         continue;
       }
-      res = client.updateObject(existing.id, payload);
+      res = writeWithRetry(function () { return client.updateObject(existing.id, payload); }, options.retryCount, options.retryDelayMs);
       if (res.ok) {
         stats.updated += 1;
-        tags = tagLookup(client);
       }
     } else {
-      res = client.createObject("bookmark", payload);
+      res = writeWithRetry(function () { return client.createObject("bookmark", payload); }, options.retryCount, options.retryDelayMs);
       if (res.ok) {
         stats.created += 1;
-        tags = tagLookup(client);
         if (!index.byUrl[url]) index.byUrl[url] = [];
         index.byUrl[url].push(res.object || { id: res.id, source: url });
       }
@@ -200,7 +232,12 @@ function syncBookmarks(client, bookmarks, options) {
 
     if (!res || !res.ok) {
       stats.errors += 1;
-      console.log("error: " + title + " -> " + ((res && res.error) || "unknown error"));
+      if (isRateLimitError(res)) stats.rate_limited += 1;
+      console.log("error: " + title + " -> " + errorText(res));
+    }
+
+    if ((stats.created + stats.updated + stats.unchanged + stats.errors) % 25 === 0) {
+      console.log("progress: " + (i + 1) + "/" + bookmarks.length + " created=" + stats.created + " updated=" + stats.updated + " unchanged=" + stats.unchanged + " errors=" + stats.errors);
     }
   }
 
@@ -233,7 +270,12 @@ export function main(args) {
   });
 
   var mode = args.mode || "sync";
-  var options = { verbose: boolArg(args.verbose), dryRun: boolArg(args.dryRun) };
+  var options = {
+    verbose: boolArg(args.verbose),
+    dryRun: boolArg(args.dryRun),
+    retryCount: intArg(args.retryCount, 4),
+    retryDelayMs: intArg(args.retryDelayMs, 1200)
+  };
 
   var initialIndex = indexBookmarks(client);
   var initialTags = tagLookup(client);
