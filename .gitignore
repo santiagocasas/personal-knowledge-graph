@@ -1,0 +1,9 @@
+.sisyphus/
+*.env
+secrets/
+.anytype-key
+data/
+__pycache__/
+*.pyc
+.venv/
+.python-version
