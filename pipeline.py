@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -13,7 +14,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent
 MODULE_DIR = REPO_ROOT / "src" / "knowledge_pipeline"
-HELPER_DIR = Path("/home/casas/Personal/anytype-agents-skill")
+HELPER_DIR = Path(os.getenv("ANYTYPE_HELPER_DIR", str(REPO_ROOT.parent / "anytype-agents-skill"))).expanduser()
 RUNTIME_CANDIDATES = [
     shutil.which("anytype-agent-runtime"),
     str(Path.home() / "go" / "bin" / "anytype-agent-runtime"),

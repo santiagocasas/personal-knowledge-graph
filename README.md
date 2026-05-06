@@ -24,7 +24,7 @@ knowledge/
 
 ## Firefox → Anytype Bookmark Pipeline
 
-Imports Firefox bookmarks into the **Ontologist** Anytype space, with LLM-assisted tagging
+Imports Firefox bookmarks into a target Anytype space, with LLM-assisted tagging
 via [Blablador](https://helmholtz-blablador.fz-juelich.de/).
 
 ## Simple Commands (recommended)
@@ -44,10 +44,10 @@ uv run pipeline.py verify
 ### Setup
 
 ```bash
-cd ~/Personal/knowledge
+cd knowledge
 uv sync
 cp .env.example .env
-# Edit .env: set ANYTYPE_API_KEY and ANYTYPE_SPACE_ID
+# Edit .env: set ANYTYPE_API_KEY, ANYTYPE_SPACE_ID, and ANYTYPE_HELPER_DIR
 ```
 
 ### Export bookmarks from Firefox
@@ -74,7 +74,7 @@ Output: `data/categorized.json`
 ### Step 2 — Import
 
 Syncs categorized bookmarks into Anytype through `anytype-agent-runtime` and
-`~/Personal/anytype-agents-skill/anytypeHelper.js`:
+the configured `anytypeHelper.js` helper directory:
 
 ```bash
 uv run pipeline.py sync --report --yes
@@ -89,7 +89,7 @@ a sync run.
 You can also run the JS backbone directly:
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_pipeline/import_anytype.js input=@data/categorized.json mode=report
+anytype-agent-runtime -e .env -m "$ANYTYPE_HELPER_DIR" src/knowledge_pipeline/import_anytype.js input=@data/categorized.json mode=report
 ```
 
 ### Duplicate cleanup
@@ -97,13 +97,13 @@ anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_p
 Preview duplicate bookmark objects grouped by `source` URL:
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_pipeline/deduplicate_anytype.js
+anytype-agent-runtime -e .env -m "$ANYTYPE_HELPER_DIR" src/knowledge_pipeline/deduplicate_anytype.js
 ```
 
 Archive duplicate objects, keeping the first object for each URL:
 
 ```bash
-anytype-agent-runtime -e .env -m ~/Personal/anytype-agents-skill src/knowledge_pipeline/deduplicate_anytype.js yes=true
+anytype-agent-runtime -e .env -m "$ANYTYPE_HELPER_DIR" src/knowledge_pipeline/deduplicate_anytype.js yes=true
 ```
 
 ---
@@ -182,9 +182,11 @@ bulk fetch instead of per-URL search.
 
 Docs: https://developers.anytype.io
 
-### Key IDs (Ontologist space)
+### Key IDs
 
-```
-Space ID:       bafyreig6fpie6n66zh7ive6chvjrsvwxbdue6kzh5b7ljrc3i5ny2z2jui.q4gkw8g0ft1i
-Tag property:   bafyreiailumqalfxxfwcocgpwbxgjis3thxrqzsghx7cfnnhtcxp27nqqu
+Store space-specific IDs in `.env`, not in tracked files:
+
+```bash
+ANYTYPE_SPACE_ID=your_anytype_space_id_here
+ANYTYPE_TAG_PROPERTY_ID=optional_tag_property_id_override
 ```

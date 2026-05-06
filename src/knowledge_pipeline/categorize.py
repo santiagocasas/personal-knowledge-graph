@@ -20,7 +20,7 @@ Options:
 
 Env vars (from .env):
     BLABLADOR_API_KEY   — required (or set in system env)
-    ANYTYPE_API_KEY     — required (to fetch current tags from Ontologist)
+    ANYTYPE_API_KEY     — required (to fetch current tags from the target Anytype space)
     ANYTYPE_BASE_URL    — defaults to http://localhost:31009
 """
 
@@ -52,11 +52,8 @@ BLABLADOR_API_KEY = os.getenv("BLABLADOR_API_KEY", "")
 ANYTYPE_BASE_URL = os.getenv("ANYTYPE_BASE_URL", "http://localhost:31009")
 ANYTYPE_API_KEY = os.getenv("ANYTYPE_API_KEY", "")
 ANYTYPE_VERSION = "2025-11-08"
-ONTOLOGIST_SPACE_ID = os.getenv(
-    "ANYTYPE_SPACE_ID",
-    "bafyreig6fpie6n66zh7ive6chvjrsvwxbdue6kzh5b7ljrc3i5ny2z2jui.q4gkw8g0ft1i",
-)
-TAG_PROPERTY_ID = "bafyreiailumqalfxxfwcocgpwbxgjis3thxrqzsghx7cfnnhtcxp27nqqu"
+ANYTYPE_SPACE_ID = os.getenv("ANYTYPE_SPACE_ID", "")
+ANYTYPE_TAG_PROPERTY_ID = os.getenv("ANYTYPE_TAG_PROPERTY_ID", "")
 
 DEFAULT_BATCH_SIZE = 10
 MAX_RETRIES = 3
@@ -147,8 +144,22 @@ def anytype_headers() -> dict:
     }
 
 
+def resolve_tag_property_id(space_id: str) -> str:
+    if ANYTYPE_TAG_PROPERTY_ID:
+        return ANYTYPE_TAG_PROPERTY_ID
+
+    url = f"{ANYTYPE_BASE_URL}/v1/spaces/{space_id}/properties"
+    resp = requests.get(url, headers=anytype_headers(), timeout=10)
+    resp.raise_for_status()
+    for prop in resp.json().get("data", []):
+        if prop.get("key") == "tag":
+            return prop.get("id", "")
+    raise RuntimeError("Could not find Anytype tag property. Set ANYTYPE_TAG_PROPERTY_ID in .env.")
+
+
 def fetch_existing_tags(space_id: str) -> list[dict]:
-    url = f"{ANYTYPE_BASE_URL}/v1/spaces/{space_id}/properties/{TAG_PROPERTY_ID}/tags"
+    tag_property_id = resolve_tag_property_id(space_id)
+    url = f"{ANYTYPE_BASE_URL}/v1/spaces/{space_id}/properties/{tag_property_id}/tags"
     resp = requests.get(url, headers=anytype_headers(), timeout=10)
     resp.raise_for_status()
     return resp.json().get("data", [])
@@ -323,9 +334,11 @@ Examples:
         sys.exit(1)
 
     # --- Step 3: Fetch existing tags ---
-    print("Fetching existing tags from Anytype Ontologist space...")
+    print("Fetching existing tags from Anytype target space...")
     try:
-        existing_tags = fetch_existing_tags(ONTOLOGIST_SPACE_ID)
+        if not ANYTYPE_SPACE_ID:
+            raise RuntimeError("ANYTYPE_SPACE_ID is required in .env")
+        existing_tags = fetch_existing_tags(ANYTYPE_SPACE_ID)
         print(f"Found {len(existing_tags)} existing tags: {[t['name'] for t in existing_tags]}")
     except Exception as e:
         print(f"WARNING: Could not fetch tags from Anytype: {e}", file=sys.stderr)
