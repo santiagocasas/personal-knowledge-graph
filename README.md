@@ -1,5 +1,11 @@
 # knowledge
 
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
+[![uv](https://img.shields.io/badge/managed%20with-uv-6f42c1.svg)](https://docs.astral.sh/uv/)
+[![Anytype](https://img.shields.io/badge/syncs%20to-Anytype-111111.svg)](https://anytype.io/)
+[![Firefox](https://img.shields.io/badge/imports-Firefox%20bookmarks-ff7139.svg)](https://www.mozilla.org/firefox/)
+[![Status](https://img.shields.io/badge/status-experimental-orange.svg)](#)
+
 Personal knowledge management repo — scripts and automation for [Anytype](https://anytype.io).
 
 ## Structure
