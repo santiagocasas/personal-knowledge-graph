@@ -47,6 +47,8 @@ uv run pipeline.py verify
 
 `sync --with-pages` imports bookmarks and topic-guide pages together.
 
+For the recurring update workflow, see [`MAINTENANCE.md`](MAINTENANCE.md).
+
 ### Setup
 
 ```bash
