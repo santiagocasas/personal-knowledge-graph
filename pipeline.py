@@ -99,6 +99,34 @@ def print_page_sync_report(preview: dict, show_details: bool = False) -> None:
             print(f"  - Web Topic: {row.get('topic')} ({row.get('matched', 0)} bookmarks)")
 
 
+def print_kg_provision_report(report: dict) -> None:
+    stats = (report or {}).get("stats", {})
+    if not stats:
+        raise RuntimeError("Anytype runtime returned no provisioning report")
+
+    mode = "Dry-run" if report.get("dry_run") else "Provision"
+    print(f"\n{mode} report for {report.get('profile')} ({report.get('space_id')}):")
+    print(f"  Types defined     : {stats.get('types_defined', 0)}")
+    print(f"  Types to create   : {stats.get('planned_create', 0)}")
+    print(f"  Types to update   : {stats.get('planned_update', 0)}")
+    print(f"  Types unchanged   : {stats.get('unchanged', 0)}")
+    if not report.get("dry_run"):
+        print(f"  Types created     : {stats.get('created', 0)}")
+        print(f"  Types updated     : {stats.get('updated', 0)}")
+        print(f"  Errors            : {stats.get('errors', 0)}")
+
+    for row in report.get("details", []):
+        action = row.get("action", "unknown")
+        suffix = ""
+        if row.get("missing_properties"):
+            suffix = f"; properties: {', '.join(row['missing_properties'])}"
+        print(f"  - {row.get('name')} [{row.get('key')}]: {action}{suffix}")
+        for warning in row.get("property_warnings", []):
+            print(f"    warning: {warning}")
+        if row.get("error"):
+            print(f"    error: {row['error']}")
+
+
 def cmd_parse(args: argparse.Namespace) -> None:
     cmd = ["uv", "run", "python", str(MODULE_DIR / "categorize.py"), "--parse-only", "--input", str(args.input)]
     run(cmd)
@@ -225,8 +253,36 @@ def cmd_verify(args: argparse.Namespace) -> None:
     run(dry_page_cmd)
 
 
+def cmd_kg_provision(args: argparse.Namespace) -> None:
+    sys.path.insert(0, str(MODULE_DIR))
+    from kg_profile import ProfileError, load_profile
+
+    try:
+        profile = load_profile(args.profile)
+    except ProfileError as exc:
+        raise SystemExit(f"Invalid ontology profile: {exc}") from exc
+
+    cmd = [
+        runtime_path(),
+        "-e",
+        ".env",
+        "-m",
+        str(HELPER_DIR),
+        str(MODULE_DIR / "provision_kg_anytype.js"),
+        "profile=" + json.dumps(profile, separators=(",", ":")),
+        f"dryRun={'true' if args.dry_run else 'false'}",
+    ]
+    report = parse_runtime_res(run_capture(cmd))
+    try:
+        print_kg_provision_report(report)
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
+    if report.get("stats", {}).get("errors", 0):
+        raise SystemExit(1)
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Simple unified CLI for bookmarks -> Anytype pipeline")
+    parser = argparse.ArgumentParser(description="Unified CLI for personal knowledge pipelines")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_parse = sub.add_parser("parse", help="Parse Firefox HTML into bookmarks.json")
@@ -270,6 +326,18 @@ def main() -> None:
     p_verify = sub.add_parser("verify", help="Verify data vs Anytype status")
     p_verify.add_argument("--limit", type=int, default=0)
     p_verify.set_defaults(func=cmd_verify)
+
+    p_kg = sub.add_parser("kg", help="Personal knowledge graph operations")
+    kg_sub = p_kg.add_subparsers(dest="kg_command", required=True)
+    p_provision = kg_sub.add_parser("provision", help="Provision Anytype types from an ontology profile")
+    p_provision.add_argument(
+        "--profile",
+        type=Path,
+        default=REPO_ROOT / "ontologies" / "cosmology.yaml",
+        help="Ontology profile (default: ontologies/cosmology.yaml)",
+    )
+    p_provision.add_argument("--dry-run", action="store_true", help="Report changes without writing to Anytype")
+    p_provision.set_defaults(func=cmd_kg_provision)
 
     args = parser.parse_args()
     args.func(args)
