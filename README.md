@@ -8,6 +8,30 @@
 
 Personal knowledge management repo — scripts and automation for [Anytype](https://anytype.io).
 
+## Personal Knowledge Graph
+
+The Cosmology pilot uses `ontologies/cosmology.yaml` as a declarative schema for
+six Anytype types: `Person`, `Institution`, `Paper`, `Talk`, `Concept`, and
+`Event`. The profile fixes the target space, records RDF class mappings, and
+defines the Anytype properties used by later ingestion and materialization
+phases.
+
+Preview schema changes before writing:
+
+```bash
+uv run pipeline.py kg provision --dry-run
+```
+
+Provision missing types and properties idempotently:
+
+```bash
+uv run pipeline.py kg provision
+```
+
+Re-running either command reports all six types as unchanged once the schema is
+current. Provisioning creates no knowledge objects and does not materialize any
+graph data.
+
 ## Structure
 
 ```
@@ -21,7 +45,11 @@ knowledge/
 │   ├── fetch_markdown.py
 │   ├── enrich.py
 │   ├── synthesize.py
-│   └── sync_synthesis_anytype.js
+│   ├── sync_synthesis_anytype.js
+│   ├── kg_profile.py
+│   └── provision_kg_anytype.js
+├── ontologies/
+│   └── cosmology.yaml   # declarative KG schema and Anytype projection
 ├── pyproject.toml       # uv project + dependencies
 ├── .env                 # API keys (gitignored)
 └── data/                # gitignored — drop input files here
