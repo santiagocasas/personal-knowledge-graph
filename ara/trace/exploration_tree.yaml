@@ -1,0 +1,36 @@
+tree:
+  - id: N01
+    type: decision
+    title: Execute Cosmology schema phase
+    provenance: user
+    timestamp: "2026-08-25T16:02+02:00"
+    choice: >
+      Implement Phase 1 as a declarative Cosmology ontology profile, validated
+      loader, and idempotent Anytype schema provisioner without materializing
+      knowledge objects.
+    alternatives:
+      - Defer implementation and continue architecture discussion
+      - Begin source ingestion before provisioning the target schema
+    evidence:
+      - ontologies/cosmology.yaml
+      - src/knowledge_pipeline/kg_profile.py
+      - src/knowledge_pipeline/provision_kg_anytype.js
+    status: resolved
+    children:
+      - id: N02
+        type: experiment
+        title: Verify live provisioning idempotency
+        provenance: ai-executed
+        timestamp: "2026-08-25T16:02+02:00"
+        description: >
+          Preview, apply, and preview the Cosmology schema through the local
+          Anytype runtime.
+        result: >
+          Initial dry-run planned six creates. Apply created six types with zero
+          errors. Final dry-run reported zero creates, zero updates, and six
+          unchanged types.
+        evidence:
+          - command: python pipeline.py kg provision --dry-run
+          - command: python pipeline.py kg provision
+          - Cosmology space: bafyreigxfhhyti42664nfy37wg75hz7h6mb4aehgtwbksf6tosip7zxv54.q4gkw8g0ft1i
+        status: resolved

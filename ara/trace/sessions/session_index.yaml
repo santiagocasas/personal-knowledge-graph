@@ -1,0 +1,8 @@
+sessions:
+  - id: "2026-08-25_001"
+    date: "2026-08-25"
+    summary: "Implemented and live-provisioned the idempotent Cosmology Anytype schema."
+    turn_count: 1
+    events_count: 2
+    claims_touched: []
+    open_threads: 1

@@ -1,0 +1,6 @@
+entries:
+  - turn: "2026-08-25_001#1"
+    notes:
+      - "Routed the explicit Phase 1 commitment as decision N01."
+      - "Routed the live preview/apply/re-preview sequence as experiment N02."
+      - "No interpretive observations were staged; implementation facts are fully represented in the journey trace."
