@@ -1,0 +1,220 @@
+session:
+  id: "2026-08-26_001"
+  date: "2026-08-26"
+  started: "2026-08-26T09:25+02:00"
+  last_turn: "2026-08-27T00:00+02:00"
+  turn_count: 9
+  summary: "Diagnosed a missing high-citation Euclid Paper as an unresolved ADS title/identifier enrichment gap."
+
+events_logged:
+  - turn: 1
+    type: experiment
+    id: N14
+    routing: direct
+    provenance: ai-executed
+    summary: "Matched, enriched, and projected all five Papers with ADS metadata while preserving hyperauthorship limits."
+  - turn: 2
+    type: decision
+    id: N15
+    routing: direct
+    provenance: user
+    summary: "Requested a complete ORCID-driven My Papers bootstrap with dry-run before writes."
+  - turn: 2
+    type: experiment
+    id: N16
+    routing: direct
+    provenance: ai-executed
+    summary: "Previewed 71 grouped works: 3 existing, 68 new, 66 ADS-backed, and 5 ORCID-only."
+  - turn: 3
+    type: decision
+    id: N17
+    routing: direct
+    provenance: user
+    summary: "Approved canonical ingestion of the 71-work ORCID baseline with later curation."
+  - turn: 3
+    type: dead_end
+    id: N18
+    routing: direct
+    provenance: ai-executed
+    summary: "The expanded manifest exceeded the OS argument limit; no Anytype writes occurred."
+  - turn: 3
+    type: experiment
+    id: N19
+    routing: direct
+    provenance: ai-executed
+    summary: "Applied four canonical JSONL changes, verified a no-op rerun, and previewed 69 Anytype creates."
+  - turn: 4
+    type: decision
+    id: N20
+    routing: direct
+    provenance: user
+    summary: "Requested Santiago links on every My Papers publication and at most five coauthors for large Euclid papers."
+  - turn: 4
+    type: experiment
+    id: N21
+    routing: direct
+    provenance: ai-executed
+    summary: "Applied 306 canonical coauthor links; live Anytype projection timed out safely before relation reconciliation."
+  - turn: 5
+    type: experiment
+    id: N22
+    routing: direct
+    provenance: ai-executed
+    summary: "Reconciled two non-ORCID ADS Papers and materialized five People plus two bounded author sets."
+  - turn: 6
+    type: experiment
+    id: N23
+    routing: direct
+    provenance: ai-executed
+    summary: "Reconciled 55 Euclid corporate Papers and materialized 50 missing Institution links."
+  - turn: 7
+    type: experiment
+    id: N24
+    routing: direct
+    provenance: ai-executed
+    summary: "Queried the canonical graph locally with SPARQL and exported 3,436 triples across 72 named graphs."
+  - turn: 8
+    type: experiment
+    id: N25
+    routing: direct
+    provenance: ai-executed
+    summary: "Added kg ask; generated and executed a live Euclid ranking query, rejected an unrelated question, and persisted the query."
+  - turn: 9
+    type: experiment
+    id: N26
+    routing: direct
+    provenance: ai-executed
+    summary: "Found Euclid preparation VII in canonical data without citation_count; ADS title variant resolves it to 451 citations."
+
+ai_actions:
+  - turn: 1
+    action: "Implemented ADS lookup, deterministic canonical enrichment, projection limits, CLI wiring, documentation, and tests."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_ads.py
+      - src/knowledge_pipeline/kg_materialize.py
+      - src/knowledge_pipeline/materialize_kg_anytype.js
+      - ontologies/cosmology.yaml
+      - pipeline.py
+      - .env.example
+      - README.md
+      - tests/test_kg_ingest.py
+      - graph/entities.jsonl
+      - graph/aliases.jsonl
+  - turn: 1
+    action: "Applied ADS enrichment and Anytype schema/materialization updates, then verified live records and no-op dry-runs."
+    provenance: ai-executed
+    files_changed: []
+  - turn: 2
+    action: "Implemented ORCID grouped-work ingestion, identifier deduplication, conservative ADS title fallback, My Papers scope generation, CLI wiring, documentation, and tests."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_orcid.py
+      - src/knowledge_pipeline/kg_ads.py
+      - pipeline.py
+      - .env.example
+      - README.md
+      - tests/test_kg_ingest.py
+  - turn: 2
+    action: "Ran limited and complete live ORCID/ADS dry-runs without writing canonical JSONL or Anytype."
+    provenance: ai-executed
+    files_changed: []
+  - turn: 3
+    action: "Applied the ORCID baseline to canonical JSONL and verified idempotency."
+    provenance: ai-executed
+    files_changed:
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - graph/aliases.jsonl
+      - graph/scopes.jsonl
+  - turn: 3
+    action: "Replaced command-line manifest transport with a temporary self-contained runtime script and previewed Anytype without writes."
+    provenance: ai-executed
+    files_changed:
+      - pipeline.py
+  - turn: 4
+    action: "Implemented stable Santiago identity, bounded coauthor generation, alias merging, tests, and documentation."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_orcid.py
+      - src/knowledge_pipeline/kg_ingest.py
+      - tests/test_kg_ingest.py
+      - README.md
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - graph/aliases.jsonl
+  - turn: 4
+    action: "Attempted live author projection and inspected the partial Anytype state after the two-minute timeout."
+    provenance: ai-executed
+    files_changed: []
+  - turn: 5
+    action: "Added source-honest fallback author reconciliation, regression coverage, canonical updates, and live Anytype projection."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_orcid.py
+      - tests/test_kg_ingest.py
+      - README.md
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - graph/aliases.jsonl
+  - turn: 6
+    action: "Added source-independent Euclid corporate-author detection, regression coverage, documentation, canonical relations, and live Anytype projection."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_orcid.py
+      - tests/test_kg_ingest.py
+      - README.md
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+  - turn: 7
+    action: "Implemented the rdflib-backed RDF builder, local SPARQL CLI, TriG export, reusable Euclid query, documentation, dependency lock, and regression test."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_rdf.py
+      - queries/top_euclid_papers.rq
+      - pipeline.py
+      - pyproject.toml
+      - uv.lock
+      - README.md
+      - graph/README.md
+      - tests/test_kg_rdf.py
+      - kg.trig
+  - turn: 8
+    action: "Implemented schema-censused natural-language SPARQL generation, validation, repair, query persistence, CLI wiring, tests, and documentation."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_ask.py
+      - tests/test_kg_ask.py
+      - pipeline.py
+      - README.md
+      - queries/generated/which-euclid-collaboration-papers-have-the-most-ci.rq
+   - turn: 9
+     action: "Added punctuation-tolerant ADS title fallback, enriched Euclid preparation VII, materialized it, and verified its 451-citation ranking."
+    provenance: ai-executed
+    files_changed: []
+
+claims_touched: []
+
+key_context:
+  - turn: 1
+    excerpt: "User reported that ADS_API_TOKEN had been added to the local .env and later asked execution to continue after an interruption."
+  - turn: 2
+    excerpt: "User confirmed ORCID_ID was configured and explicitly requested a dry-run first."
+  - turn: 3
+    excerpt: "User approved ingestion of the proposed works and expected later curation to remain possible."
+  - turn: 4
+    excerpt: "User requested explicit Santiago and bounded coauthor relations, then chose to run the longer completion command locally."
+  - turn: 6
+    excerpt: "User observed that many Euclid Papers did not point to the Euclid Collaboration Institution and asked why."
+  - turn: 7
+    excerpt: "User asked for a simple Python SPARQL path after an equivalent Anytype MCP question required many tool calls and substantial context."
+  - turn: 8
+    excerpt: "User approved a self-contained kg ask implementation using Blablador alias-code, default execution, persisted generated queries, and one empty-result repair."
+  - turn: 9
+    excerpt: "User reported that Euclid preparation VII should rank second with 451 ADS citations but was absent from the generated ranking."
+
+open_threads:
+  - "Curate individual author identity collisions and institutional affiliations when reliable identifiers become available."
+  - "Optionally expose kg ask or the local SPARQL query function through a small read-only MCP server."
+
+ai_suggestions_pending: []

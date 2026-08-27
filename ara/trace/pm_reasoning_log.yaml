@@ -4,3 +4,85 @@ entries:
       - "Routed the explicit Phase 1 commitment as decision N01."
       - "Routed the live preview/apply/re-preview sequence as experiment N02."
       - "No interpretive observations were staged; implementation facts are fully represented in the journey trace."
+  - turn: "2026-08-25_001#2"
+    notes:
+      - "Routed the live type and instance queries as experiment N03."
+      - "Did not stage a claim about exact desktop widget behavior; only the API-observed schema and zero-instance facts are settled."
+  - turn: "2026-08-25_001#3"
+    notes:
+      - "Routed the user-approved, API-verified cleanup as experiment N04."
+      - "Recorded protected built-in deletion no-ops as observed results rather than assuming successful API responses meant archival."
+      - "No knowledge observation was staged; the cleanup changed projection state, not the ontology design."
+  - turn: "2026-08-25_001#4"
+    notes:
+      - "Routed the explicit Phase 2 request as decision N05 and the verified ingestion as experiment N06."
+      - "Did not stage the output counts as claims; they are direct, reproducible experiment results."
+      - "Closed the Phase 2 open thread and advanced the next thread to identity resolution and metadata enrichment."
+  - turn: "2026-08-25_001#5"
+    notes:
+      - "Routed the user's visibility mismatch as pivot N07 from local-only records to controlled Anytype projection."
+      - "Recorded the rejected create payload as dead end N08 because it produced a reusable helper contract lesson and no side effects."
+      - "Routed the successful create/link/re-preview sequence as experiment N09."
+      - "Kept identity resolution and ORCID/ADS enrichment open; materialization no longer blocks browsing."
+  - turn: "2026-08-25_001#6"
+    notes:
+      - "Routed the ingestion/materialization clarification and ADS readiness as open question N10."
+      - "Did not record ADS support as implemented; the current executable ingest contract remains BibTeX-only."
+      - "Kept the token value outside the research trace and directed it to the gitignored local environment file."
+  - turn: "2026-08-25_001#7"
+    notes:
+      - "Routed the request for selectable ingestion subgraphs as open question N11."
+      - "Staged O01 as architecture because the many-to-many scope layer is an AI proposal, not yet user-affirmed."
+      - "Kept scope membership distinct from source provenance to avoid conflating where a record came from with how the researcher wants to browse it."
+  - turn: "2026-08-25_001#8"
+    notes:
+      - "Routed the explicit approval as decision N12 and the live scoped projection as experiment N13."
+      - "Crystallized O01 into architecture A01 via verbal affirmation and upgraded provenance to user-revised."
+      - "Closed the scope-design thread after tests, live membership inspection, and no-op dry-runs; retained ADS enrichment as the next open thread."
+  - turn: "2026-08-26_001#1"
+    notes:
+      - "Routed the verified five-paper ADS enrichment as experiment N14 and resolved the existing ADS question N10."
+      - "Recorded complete canonical author retention and bounded Anytype previews as experiment results rather than creating a general claim."
+      - "Kept the token value out of all traces and advanced the open thread to ORCID identity resolution."
+  - turn: "2026-08-26_001#2"
+    notes:
+      - "Routed the explicit dry-run-first instruction as user decision N15 and the live 71-work preview as experiment N16."
+      - "Recorded ORCID preferred-group collapse and conservative ADS resolution as observed behavior, not a general claim."
+      - "Kept ORCID_ID and ADS_API_TOKEN values out of reports and traces; no canonical or Anytype writes occurred."
+  - turn: "2026-08-26_001#3"
+    notes:
+      - "Routed approval of the proposed ORCID corpus as user decision N17 and the verified canonical apply/preview sequence as experiment N19."
+      - "Recorded the argv size failure as dead end N18 because it yielded a reusable runtime transport constraint and caused no Anytype side effects."
+      - "Kept canonical ingestion distinct from Anytype materialization; the user approved the former, while the latter remains a previewed open decision."
+      - "Did not stage later curation as a new claim because source provenance and Graph Scope membership already preserve that operational option."
+  - turn: "2026-08-26_001#4"
+    notes:
+      - "Routed the explicit author-link policy as user decision N20 and the canonical apply plus partial live projection as experiment N21."
+      - "Kept N21 unresolved because the command timeout occurred before relation reconciliation; object creation was partial but safe under canonical_id idempotency."
+      - "Recorded observed live counts rather than inferring completion from the interrupted command."
+      - "Left institution resolution open implicitly within the deferred author-identity work; no institution claims were staged."
+  - turn: "2026-08-26_001#5"
+    notes:
+      - "Resolved N21 only after the user's completed materialization produced a no-op dry-run and live links were inspected."
+      - "Routed the out-of-ORCID ADS correction as experiment N22; it fixes an observed source-coverage gap rather than changing the bounded-author policy."
+      - "Used derived:bounded-authors provenance for reading-list Papers so no ORCID provenance was fabricated."
+      - "Kept identity collision and institution resolution open for later curation; no interpretive claim was staged."
+  - turn: "2026-08-26_001#6"
+    notes:
+      - "Routed the corporate-author source-coverage correction as experiment N23 because live evidence resolved the observed missing-link behavior."
+      - "Used derived:corporate-authors provenance and exact markers or official Euclid series prefixes; no ORCID attribution was fabricated."
+      - "Kept individual affiliations open because corporate authorship does not establish each person's institution."
+   - turn: "2026-08-26_001#7"
+    notes:
+      - "Routed the local RDF/SPARQL implementation as experiment N24 because its value was demonstrated against the live canonical graph."
+      - "Kept JSONL canonical and treated TriG as a generated projection, preserving source_refs as named graph identifiers."
+       - "Did not stage a performance claim; the turn established fewer tool calls operationally but did not benchmark latency or token savings."
+   - turn: "2026-08-26_001#8"
+     notes:
+       - "Routed the implemented natural-language kg ask flow as experiment N25 because it was validated offline and exercised against the live graph."
+       - "Generated the schema card from canonical JSONL rather than the Anytype profile to preserve raw predicate names such as corporate_authored_by."
+       - "Recorded the Blablador HTTP 502 as an external request failure, not as a graph or query failure; the unrelated weather question was explicitly rejected as UNANSWERABLE."
+   - turn: "2026-08-26_001#9"
+     notes:
+       - "Routed the missing-ranking investigation as experiment N26; canonical relation coverage is present, so the failure is metadata completeness rather than SPARQL filtering."
+       - "Resolved the ADS title punctuation mismatch through an explicit fallback, then recorded the canonical and Anytype enrichment as the experiment outcome rather than silently editing the record."

@@ -2,9 +2,9 @@ session:
   id: "2026-08-25_001"
   date: "2026-08-25"
   started: "2026-08-25T16:02+02:00"
-  last_turn: "2026-08-25T16:02+02:00"
-  turn_count: 1
-  summary: "Implemented and live-provisioned the idempotent Cosmology Anytype schema."
+  last_turn: "2026-08-25T18:04+02:00"
+  turn_count: 8
+  summary: "Implemented and verified many-to-many Graph Scopes before expanding ingestion."
 
 events_logged:
   - turn: 1
@@ -19,6 +19,84 @@ events_logged:
     routing: direct
     provenance: ai-executed
     summary: "Created six Anytype types; final preview found all six unchanged."
+  - turn: 2
+    type: experiment
+    id: N03
+    routing: direct
+    provenance: ai-executed
+    summary: "Confirmed six live schema types and zero instances; the sidebar widget is not the full registry."
+  - turn: 3
+    type: experiment
+    id: N04
+    routing: direct
+    provenance: ai-executed
+    summary: "Moved 14 approved demo objects to Bin and archived Objective and Note without affecting KG types."
+  - turn: 4
+    type: decision
+    id: N05
+    routing: direct
+    provenance: user
+    summary: "Committed Phase 2 to local BibTeX ingestion into canonical JSONL before Anytype materialization."
+  - turn: 4
+    type: experiment
+    id: N06
+    routing: direct
+    provenance: ai-executed
+    summary: "Generated 45 deterministic graph records from five papers; tests and idempotency check passed."
+  - turn: 5
+    type: pivot
+    id: N07
+    routing: direct
+    provenance: user
+    summary: "Advanced from local-only records to an idempotent Anytype projection after the visibility mismatch."
+  - turn: 5
+    type: dead_end
+    id: N08
+    routing: direct
+    provenance: ai-executed
+    summary: "Create payload typeKey was rejected as an unknown property; no objects were written."
+  - turn: 5
+    type: experiment
+    id: N09
+    routing: direct
+    provenance: ai-executed
+    summary: "Created 12 linked KG objects and confirmed a fully unchanged second dry-run."
+  - turn: 6
+    type: question
+    id: N10
+    routing: direct
+    provenance: user
+    summary: "Requested ingest/materialize guidance and indicated readiness to create a NASA ADS token."
+  - turn: 7
+    type: question
+    id: N11
+    routing: direct
+    provenance: user
+    summary: "Requested broad, distinguishable ingestion groupings that can be viewed as separate subgraphs."
+  - turn: 7
+    type: observation
+    id: O01
+    routing: staged
+    provenance: ai-suggested
+    summary: "Proposed many-to-many graph scopes separated from technical provenance and semantic concepts."
+  - turn: 8
+    type: decision
+    id: N12
+    routing: direct
+    provenance: user
+    summary: "Approved the many-to-many Graph Scope architecture for focused subgraphs."
+  - turn: 8
+    type: experiment
+    id: N13
+    routing: direct
+    provenance: ai-executed
+    summary: "Created and verified a live Cosmology Notes scope containing all 12 current graph objects."
+  - turn: 8
+    type: architecture
+    id: A01
+    routing: crystallized
+    provenance: user-revised
+    summary: "Crystallized the separation of graph scopes, source provenance, and semantic concepts."
 
 ai_actions:
   - turn: 1
@@ -34,14 +112,85 @@ ai_actions:
     action: "Ran a live dry-run, provisioned the Cosmology schema, and confirmed idempotency with a second dry-run."
     provenance: ai-executed
     files_changed: []
+  - turn: 2
+    action: "Queried live Cosmology types and searched each provisioned type for instances."
+    provenance: ai-executed
+    files_changed: []
+  - turn: 3
+    action: "Inventoried Cosmology content, converted Mails/Slack to send to Task, removed the approved demo bundle, and verified type deletion behavior."
+    provenance: ai-executed
+    files_changed: []
+  - turn: 4
+    action: "Implemented the BibTeX parser, source-aware JSONL merge, KG ingest CLI, documentation, and focused tests."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_ingest.py
+      - pipeline.py
+      - README.md
+      - graph/README.md
+      - tests/test_kg_ingest.py
+  - turn: 4
+    action: "Ingested five Cosmology papers into canonical graph entities, relations, aliases, and concepts."
+    provenance: ai-executed
+    files_changed:
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - graph/aliases.jsonl
+      - graph/concepts.jsonl
+  - turn: 5
+    action: "Implemented stable canonical-ID matching and two-pass Anytype entity/link projection."
+    provenance: ai-executed
+    files_changed:
+      - ontologies/cosmology.yaml
+      - src/knowledge_pipeline/kg_materialize.py
+      - src/knowledge_pipeline/materialize_kg_anytype.js
+      - pipeline.py
+      - README.md
+      - tests/test_kg_ingest.py
+  - turn: 5
+    action: "Provisioned canonical_id and materialized and verified 12 live graph objects with 15 relations."
+    provenance: ai-executed
+    files_changed: []
+  - turn: 8
+    action: "Implemented canonical scope parsing, scope records, managed membership relations, Anytype schema projection, documentation, and tests."
+    provenance: ai-executed
+    files_changed:
+      - ontologies/cosmology.yaml
+      - src/knowledge_pipeline/kg_ingest.py
+      - src/knowledge_pipeline/kg_materialize.py
+      - src/knowledge_pipeline/materialize_kg_anytype.js
+      - pipeline.py
+      - README.md
+      - graph/README.md
+      - tests/test_kg_ingest.py
+  - turn: 8
+    action: "Provisioned Graph Scope and materialized Cosmology Notes with 12 live members."
+    provenance: ai-executed
+    files_changed:
+      - graph/scopes.jsonl
+      - graph/relations.jsonl
 
 claims_touched: []
 
 key_context:
   - turn: 1
     excerpt: "User requested: please execute Phase 1."
+  - turn: 2
+    excerpt: "User reported seeing only Humans and Objective under the Anytype sidebar Types section."
+  - turn: 3
+    excerpt: "User approved removing 14 demo objects and attempting removal of unused default types."
+  - turn: 4
+    excerpt: "User requested starting graph population and proceeding to Phase 2."
+  - turn: 5
+    excerpt: "User reported: okay but I dont see anything in Anytype."
+  - turn: 6
+    excerpt: "User asked what materialize does, how and what can be ingested, and said an ADS token can now be generated."
+  - turn: 7
+    excerpt: "User wants to browse specific subgraphs such as My Papers, Cosmo26, or a Euclid project before ingesting too much."
+  - turn: 8
+    excerpt: "User affirmed: yes, sounds like an excellent plan, please do!"
 
 open_threads:
-  - "Phase 2: ingest local BibTeX into canonical graph JSONL without materializing it prematurely."
+  - "Phase 3: add NASA ADS ingestion/enrichment after ADS_API_TOKEN is stored locally, then resolve identities through ORCID."
 
 ai_suggestions_pending: []

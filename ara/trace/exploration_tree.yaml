@@ -15,7 +15,7 @@ tree:
       - ontologies/cosmology.yaml
       - src/knowledge_pipeline/kg_profile.py
       - src/knowledge_pipeline/provision_kg_anytype.js
-    status: resolved
+      status: resolved
     children:
       - id: N02
         type: experiment
@@ -34,3 +34,480 @@ tree:
           - command: python pipeline.py kg provision
           - Cosmology space: bafyreigxfhhyti42664nfy37wg75hz7h6mb4aehgtwbksf6tosip7zxv54.q4gkw8g0ft1i
         status: resolved
+      - id: N03
+        type: experiment
+        title: Diagnose Anytype type visibility
+        provenance: ai-executed
+        timestamp: "2026-08-25T16:16+02:00"
+        description: >
+          Query the live Cosmology space after the new schema types did not
+          appear in the desktop sidebar Types widget.
+        result: >
+          The API returned all six provisioned types with their properties, but
+          searches found zero Person, Institution, Paper, Talk, Concept, or Event
+          instances. The sidebar widget is therefore not a complete schema view.
+        evidence:
+          - Cosmology API type count: 23
+          - Provisioned type count: 6
+          - Provisioned object instance count: 0
+        status: resolved
+      - id: N04
+        type: experiment
+        title: Clean Cosmology demo content and unused types
+        provenance: ai-executed
+        timestamp: "2026-08-25T16:27+02:00"
+        description: >
+          Inventory the live Cosmology space, preserve personal content, move the
+          user-approved demo bundle to Bin, and attempt removal of unused types.
+        result: >
+          Moved 14 demo objects to Bin and reduced active objects from 28 to 14.
+          Converted Mails/Slack to send from Objective to Task before archiving
+          Objective. Objective and Note were archived; eight protected built-in
+          types ignored deletion. All six knowledge graph types remained active.
+        evidence:
+          - Active objects before cleanup: 28
+          - Active objects after cleanup: 14
+          - Objects moved to Bin: 14
+          - Types archived: Objective, Note
+          - Protected built-ins retained: Audio, Bookmark, File, Image, Template, Video, Collection, Query
+          - Untitled or empty-name objects found: 0
+        status: resolved
+  - id: N05
+    type: decision
+    title: Execute canonical BibTeX ingestion phase
+    provenance: user
+    timestamp: "2026-08-25T17:21+02:00"
+    choice: >
+      Begin Phase 2 by populating the tracked canonical graph from the local
+      BibTeX extracted from Cosmology notes, without materializing Anytype objects.
+    alternatives:
+      - Populate Anytype directly before establishing canonical records
+      - Defer ingestion until ORCID and ADS enrichment are available
+    evidence:
+      - src/knowledge_pipeline/kg_ingest.py
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+    status: resolved
+    children:
+      - id: N06
+        type: experiment
+        title: Verify deterministic Cosmology BibTeX ingestion
+        provenance: ai-executed
+        timestamp: "2026-08-25T17:21+02:00"
+        description: >
+          Parse five BibTeX entries, generate canonical entities, relations,
+          aliases, and concepts, then re-run in dry-run mode.
+        result: >
+          Generated 11 entities, 15 relations, 18 aliases, and one concept.
+          Unit tests passed and the post-ingestion dry-run reported zero changed
+          files. No Anytype knowledge objects were created.
+        evidence:
+          - command: python -m unittest discover -s tests -p "test_*.py"
+          - command: python pipeline.py kg ingest
+          - command: python pipeline.py kg ingest --dry-run
+          - BibTeX entries: 5
+          - Canonical graph records: 45
+        status: resolved
+      - id: N07
+        type: pivot
+        title: Expose the canonical graph in Anytype
+        provenance: user
+        timestamp: "2026-08-25T17:40+02:00"
+        from: "Canonical JSONL ingestion without Anytype knowledge objects"
+        to: "Controlled, idempotent Anytype projection keyed by canonical_id"
+        trigger: "User reported that no graph content was visible in Anytype."
+        status: resolved
+        children:
+          - id: N08
+            type: dead_end
+            title: Reuse update type hint on object creation
+            provenance: ai-executed
+            timestamp: "2026-08-25T17:40+02:00"
+            hypothesis: >
+              The helper's update-only typeKey hint could also be included in a
+              createObject payload.
+            failure_mode: >
+              The helper treated typeKey as an extra property during creation;
+              Anytype rejected all writes with unknown property key type_key.
+              No objects were created.
+            lesson: >
+              Pass the type only as createObject's first argument; reserve the
+              typeKey payload hint for updateObject.
+            status: resolved
+      - id: N09
+            type: experiment
+            title: Verify live canonical graph materialization
+            provenance: ai-executed
+            timestamp: "2026-08-25T17:40+02:00"
+            description: >
+              Provision canonical_id, preview the projection, materialize all
+              canonical objects and relations, inspect live records, and repeat
+              the dry-run.
+            result: >
+              Created 12 objects and updated five paper link sets with zero
+              errors. Live searches returned five Papers, five People, one
+              Institution, and one Concept. Every Paper links to its explicit
+              lead author, Euclid Collaboration, and astro-ph.CO. The final
+              dry-run reported 12 unchanged objects and zero link updates.
+            evidence:
+              - command: python pipeline.py kg provision
+              - command: python pipeline.py kg materialize --dry-run
+              - command: python pipeline.py kg materialize
+              - Objects created: 12
+              - Canonical relations projected: 15
+              - Paper link sets updated: 5
+            status: resolved
+  - id: N10
+    type: question
+    title: Extend ingestion through NASA ADS
+    provenance: user
+    timestamp: "2026-08-25T17:48+02:00"
+    description: >
+      Clarify the distinction between canonical ingestion and Anytype
+      materialization, identify currently supported source formats, and prepare
+      to add NASA ADS enrichment now that the researcher can create an API token.
+    status: resolved
+    children:
+      - id: N11
+        type: question
+        title: Define browsable ingestion scopes
+        provenance: user
+        timestamp: "2026-08-25T17:55+02:00"
+        description: >
+          Determine how to group ingested material into broad but distinguishable
+          subgraphs such as My Papers, a specific conference, or a Euclid project
+          before importing many more sources.
+        status: resolved
+        children:
+          - id: N12
+            type: decision
+            title: Adopt many-to-many Graph Scopes
+            provenance: user
+            timestamp: "2026-08-25T18:04+02:00"
+            choice: >
+              Add Graph Scope as a canonical and Anytype-projected type, keep it
+              separate from provenance and concepts, and allow each ingestion to
+              assign records to multiple scopes.
+            alternatives:
+              - Store one category string per ingestion
+              - Use source provenance as the browsing category
+            evidence:
+              - logic/solution/architecture.md:A01
+              - ontologies/cosmology.yaml
+              - src/knowledge_pipeline/kg_ingest.py
+            status: resolved
+            children:
+              - id: N13
+                type: experiment
+                title: Verify scoped ingestion and projection
+                provenance: ai-executed
+                timestamp: "2026-08-25T18:04+02:00"
+                description: >
+                  Add the Cosmology Notes scope, provision the seventh Anytype
+                  type, materialize membership links, query the live scope, and
+                  repeat dry-runs.
+                result: >
+                  Created one Graph Scope with 12 members and 24 directed scope
+                  membership relations. The canonical graph now contains 13
+                  objects and 39 relations. Live Anytype inspection confirmed the
+                  reading_list scope and all 12 members. Final schema and
+                  materialization previews reported no pending changes.
+                evidence:
+                  - command: python pipeline.py kg ingest --scope "cosmology-notes=reading_list:Cosmology Notes"
+                  - command: python pipeline.py kg provision
+                  - command: python pipeline.py kg materialize
+                  - tests: 3 passed
+                  - Anytype Graph Scope object: bafyreiczszcldzauku63w73albejpsfujn553cihge75sl7z2cr4f3bpue
+                status: resolved
+      - id: N14
+        type: experiment
+        title: Enrich canonical papers through NASA ADS
+        provenance: ai-executed
+        timestamp: "2026-08-26T09:25+02:00"
+        description: >
+          Match the five existing canonical Papers by DOI or arXiv identifier,
+          enrich them through NASA ADS, provision the new metadata properties,
+          materialize updates, inspect live Anytype records, and repeat dry-runs.
+        result: >
+          ADS matched all five Papers and enriched their canonical and Anytype
+          records with bibcodes, abstracts, publication metadata, citations,
+          keywords, and complete canonical author lists. Anytype retained stable
+          canonical IDs and projected only five author names plus the remaining
+          count for lists of 128 to 1,137 authors. No Person nodes or duplicate
+          Papers were created. Final ADS, schema, and materialization dry-runs
+          reported no pending changes.
+        evidence:
+          - command: python pipeline.py kg enrich-ads --dry-run
+          - command: python pipeline.py kg enrich-ads
+          - command: python pipeline.py kg provision
+          - command: python pipeline.py kg materialize
+          - tests: 4 passed
+          - ADS matches: 5
+          - Anytype Paper objects updated: 5
+          - Anytype Paper objects created: 0
+        status: resolved
+      - id: N15
+        type: decision
+        title: Preview complete ORCID publication bootstrap
+        provenance: user
+        timestamp: "2026-08-26T09:38+02:00"
+        choice: >
+          Use the configured ORCID record to propose the complete curated My
+          Papers scope, resolve works through ADS, and run a dry-run before any
+          canonical or Anytype writes.
+        alternatives:
+          - Continue enriching only manually ingested Papers
+          - Apply ORCID ingestion without previewing the proposed corpus
+        evidence:
+          - user request: "my orcid is configured, please do that and lets make a dryrun first"
+        status: resolved
+        children:
+          - id: N16
+            type: experiment
+            title: Dry-run ORCID and ADS publication bootstrap
+            provenance: ai-executed
+            timestamp: "2026-08-26T09:38+02:00"
+            description: >
+              Collapse public ORCID source summaries into preferred work groups,
+              deduplicate by DOI/arXiv/ADS identifiers, resolve through ADS, and
+              preview a My Papers Graph Scope without writing graph files or
+              Anytype objects.
+            result: >
+              ORCID exposed 71 preferred work groups from 84 source summaries.
+              The preview matched three existing Papers, proposed 68 new Papers,
+              resolved 63 new Papers through ADS, reused ADS metadata on three,
+              and retained five works as ORCID-only. It proposed one My Papers
+              scope with 71 Papers and 142 directed membership relations. No
+              graph or Anytype writes were performed.
+            evidence:
+              - command: uv run pipeline.py kg ingest-orcid --dry-run
+              - ORCID groups: 71
+              - existing Papers: 3
+              - new Papers: 68
+              - ADS resolved or already present: 66
+              - ORCID-only Papers: 5
+              - tests: 5 passed
+            status: resolved
+          - id: N17
+            type: decision
+            title: Apply ORCID publication baseline
+            provenance: user
+            timestamp: "2026-08-26T09:48+02:00"
+            choice: >
+              Ingest the approved 71-work ORCID proposal into the canonical graph,
+              retaining provenance so the resulting My Papers scope can be curated
+              later.
+            alternatives:
+              - Leave the proposal in dry-run state
+              - Curate individual works before canonical ingestion
+            evidence:
+              - user request: "okay, ingest them, I guess later on we can apply some curation, right?"
+              - graph/entities.jsonl
+              - graph/relations.jsonl
+              - graph/aliases.jsonl
+              - graph/scopes.jsonl
+            status: resolved
+            children:
+              - id: N18
+                type: dead_end
+                title: Pass expanded projection as a command argument
+                provenance: ai-executed
+                timestamp: "2026-08-26T09:48+02:00"
+                hypothesis: >
+                  The Anytype projection manifest can continue to be serialized as
+                  one runtime command-line argument after the ORCID expansion.
+                failure_mode: >
+                  The 82-object manifest exceeded the operating system argument
+                  size limit before the runtime started; no Anytype writes occurred.
+                lesson: >
+                  Embed large manifests in a temporary self-contained runtime script
+                  and delete it after execution rather than transporting them in argv.
+                status: resolved
+              - id: N19
+                type: experiment
+                title: Apply and preview ORCID publication baseline
+                provenance: ai-executed
+                timestamp: "2026-08-26T09:48+02:00"
+                description: >
+                  Apply the 71-work ORCID proposal, repeat a canonical dry-run, fix
+                  large-manifest transport, and preview the expanded Anytype
+                  projection without writing it.
+                result: >
+                  Canonical ingestion wrote four JSONL files and the repeated dry-run
+                  reported zero changed files. The graph contains 79 entities, 181
+                  relations, 349 aliases, and two scopes. Anytype preview planned 69
+                  creates and 72 link-set updates with 13 existing objects unchanged;
+                  no Anytype writes were made.
+                evidence:
+                  - command: uv run pipeline.py kg ingest-orcid
+                  - command: uv run pipeline.py kg ingest-orcid --dry-run
+                  - command: uv run pipeline.py kg materialize --dry-run
+                  - command: uv run python -m py_compile pipeline.py
+                  - command: git diff --check
+                status: resolved
+          - id: N20
+            type: decision
+            title: Add bounded Paper author relations
+            provenance: user
+            timestamp: "2026-08-26T10:24+02:00"
+            choice: >
+              Link every My Papers publication to Santiago Casas and project
+              coauthors as Person objects, limiting large Euclid author lists to
+              the first five people while deferring institution resolution.
+            alternatives:
+              - Keep author names only as Paper literals
+              - Expand every Euclid author into a Person object
+            evidence:
+              - user request: "connect to my Santiago Casas ... and connect to the other authors ... take the first 5 authors of the Euclid papers for now"
+              - src/knowledge_pipeline/kg_orcid.py
+              - graph/entities.jsonl
+              - graph/relations.jsonl
+            status: resolved
+            children:
+              - id: N21
+                type: experiment
+                title: Apply bounded canonical authors and attempt projection
+                provenance: ai-executed
+                timestamp: "2026-08-26T10:24+02:00"
+                description: >
+                  Generate canonical Santiago and bounded coauthor Person records,
+                  verify ingestion idempotency, preview projection, then attempt
+                  live Anytype materialization under a two-minute command limit.
+                result: >
+                  Canonical ingestion produced 307 entities, 555 relations, and
+                  581 aliases with 306 coauthor links; five tests passed. The
+                  initial live command timed out safely, after which the user ran
+                  it locally to completion. A final dry-run reported all 310
+                  objects unchanged with no pending relation updates. Live checks
+                  confirmed Santiago's ORCID and bounded coauthor links on the
+                  ORCID corpus, while exposing a separate gap for ADS Papers that
+                  were not present in the ORCID work list.
+                evidence:
+                  - command: uv run pipeline.py kg ingest-orcid
+                  - command: uv run pipeline.py kg materialize --dry-run
+                  - command: uv run pipeline.py kg materialize
+                  - tests: 5 passed
+                  - active People after timeout: 183
+                  - Papers with authored_by after timeout: 5 of 73
+                  - final materialization dry-run: 310 unchanged objects
+                status: resolved
+                children:
+                  - id: N22
+                    type: experiment
+                    title: Reconcile authors on non-ORCID ADS papers
+                    provenance: ai-executed
+                    timestamp: "2026-08-26T10:35+02:00"
+                    description: >
+                      Regenerate bounded author relations for ADS-enriched Papers
+                      outside the ORCID work list using separate derived
+                      provenance, add regression coverage, apply the canonical
+                      delta, materialize it, and repeat the projection preview.
+                    result: >
+                      Two out-of-scope ADS Papers were reconciled. The canonical
+                      graph now has 315 objects and 565 relations. Five new People
+                      and two Paper author sets were materialized with zero errors.
+                      MontePython now links Santiago plus its first five listed
+                      coauthors, and the final dry-run reports all 315 objects
+                      unchanged with no pending link updates.
+                    evidence:
+                      - src/knowledge_pipeline/kg_orcid.py
+                      - tests/test_kg_ingest.py
+                      - command: uv run pipeline.py kg ingest-orcid
+                      - command: uv run pipeline.py kg materialize
+                      - command: uv run pipeline.py kg materialize --dry-run
+                      - tests: 6 passed
+                      - derived ADS Papers reconciled: 2
+                      - Anytype People created: 5
+                    status: resolved
+                    children:
+                      - id: N23
+                        type: experiment
+                        title: Reconcile Euclid corporate authorship
+                        provenance: ai-executed
+                        timestamp: "2026-08-26T10:43+02:00"
+                        description: >
+                          Detect Euclid corporate papers independently of ingestion
+                          source, regenerate canonical corporate-author relations with
+                          derived provenance, materialize the missing Anytype links,
+                          and repeat canonical and projection dry-runs.
+                        result: >
+                          Identified 55 Euclid corporate Papers from exact author-list
+                          markers or official series title prefixes. Added 50 relations
+                          beyond the five BibTeX-derived links and updated 50 Anytype
+                          Paper link sets with zero errors. Live inspection confirmed
+                          the VIS instrument Paper points to Euclid Collaboration. Both
+                          final dry-runs reported no pending changes.
+                        evidence:
+                          - src/knowledge_pipeline/kg_orcid.py
+                          - tests/test_kg_ingest.py
+                          - command: uv run pipeline.py kg ingest-orcid
+                          - command: uv run pipeline.py kg materialize
+                          - tests: 7 passed
+                          - Euclid corporate Papers: 55
+                          - Anytype link sets updated: 50
+                        status: resolved
+                        children:
+                          - id: N24
+                            type: experiment
+                            title: Query canonical graph with local SPARQL
+                            provenance: ai-executed
+                            timestamp: "2026-08-26T13:32+02:00"
+                            description: >
+                              Convert canonical JSONL into an in-memory RDF dataset,
+                              expose local SPARQL and TriG export commands, and replace
+                              the multi-call Anytype citation-ranking workflow with one
+                              reproducible query.
+                            result: >
+                              The top-Euclid query returned the expected ranking in one
+                              command, led by the mission overview at 929 citations,
+                              NISP at 164, VIS at 156, and Flagship at 96. TriG export
+                              produced 3,436 triples in 72 provenance-named graphs.
+                              Eight tests passed and git diff validation was clean.
+                            evidence:
+                              - src/knowledge_pipeline/kg_rdf.py
+                              - queries/top_euclid_papers.rq
+                              - kg.trig
+                              - command: uv run pipeline.py kg query --file queries/top_euclid_papers.rq
+                              - command: uv run pipeline.py kg export
+                               - tests: 8 passed
+                             status: resolved
+  - id: N25
+    type: experiment
+    title: Ask canonical graph in natural language
+    provenance: ai-executed
+    timestamp: "2026-08-26T14:10+02:00"
+    description: >
+      Add a local kg ask command that uses the live JSONL vocabulary to generate,
+      validate, repair, execute, and persist SPARQL queries through Blablador.
+    result: >
+      Fifteen tests passed. A live Euclid citation question generated and executed
+      a valid query in one attempt, returning 20 ranked Papers and saving the query
+      under queries/generated. An unrelated weather question was rejected as
+      UNANSWERABLE; a second live request received an HTTP 502 from Blablador.
+    evidence:
+      - src/knowledge_pipeline/kg_ask.py
+      - tests/test_kg_ask.py
+       - queries/generated/which-euclid-collaboration-papers-have-the-most-ci.rq
+       - command: uv run pipeline.py kg ask "Which Euclid Collaboration papers have the most citations?"
+       - tests: 15 passed
+     status: resolved
+  - id: N26
+    type: experiment
+    title: Diagnose missing high-citation Paper
+    provenance: ai-executed
+    timestamp: "2026-08-27T00:00+02:00"
+    description: >
+      Trace the Euclid preparation VII Paper through canonical JSONL, relations,
+      and the citation-ranking SPARQL query.
+     result: >
+       The Paper existed and linked to Santiago Casas and Euclid Collaboration, but
+       its ORCID-only record lacked identifiers and citation_count. A punctuation-
+       tolerant ADS title fallback matched the ADS record with 451 citations. The
+       canonical record and Anytype Paper were enriched, and the ranking query now
+       places it second.
+    evidence:
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - kg.trig
+      - ADS title search for Forecast validation and Euclid
+    status: resolved

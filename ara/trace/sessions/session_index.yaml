@@ -1,8 +1,15 @@
 sessions:
   - id: "2026-08-25_001"
     date: "2026-08-25"
-    summary: "Implemented and live-provisioned the idempotent Cosmology Anytype schema."
-    turn_count: 1
-    events_count: 2
+    summary: "Implemented and verified many-to-many Graph Scopes before expanding ingestion."
+    turn_count: 8
+    events_count: 15
     claims_touched: []
     open_threads: 1
+  - id: "2026-08-26_001"
+    date: "2026-08-26"
+    summary: "Diagnosed a missing high-citation Euclid Paper as an unresolved ADS title/identifier enrichment gap."
+    turn_count: 9
+    events_count: 13
+    claims_touched: []
+    open_threads: 2

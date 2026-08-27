@@ -1,1 +1,12 @@
-observations: []
+observations:
+  - id: O01
+    timestamp: "2026-08-25T17:55+02:00"
+    provenance: user-revised
+    content: "Model visible graph scopes as many-to-many collections, separate from source-level ingestion provenance and semantic concepts."
+    context: "The researcher wants selectable subgraphs for My Papers, Cosmo26, and Euclid material before scaling ingestion."
+    potential_type: architecture
+    bound_to: [N11]
+    promoted: true
+    promoted_to: "logic/solution/architecture.md:A01"
+    crystallized_via: verbal-affirmation
+    stale: false
