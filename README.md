@@ -11,8 +11,8 @@ Personal knowledge management repo — scripts and automation for [Anytype](http
 ## Personal Knowledge Graph
 
 The Cosmology pilot uses `ontologies/cosmology.yaml` as a declarative schema for
-six Anytype types: `Person`, `Institution`, `Paper`, `Talk`, `Concept`, and
-`Event`. The profile fixes the target space, records RDF class mappings, and
+seven Anytype types: `Person`, `Institution`, `Paper`, `Talk`, `Concept`,
+`Event`, and `Graph Scope`. The profile fixes the target space, records RDF class mappings, and
 defines the Anytype properties used by later ingestion and materialization
 phases.
 
@@ -28,9 +28,145 @@ Provision missing types and properties idempotently:
 uv run pipeline.py kg provision
 ```
 
-Re-running either command reports all six types as unchanged once the schema is
+Re-running either command reports all seven types as unchanged once the schema is
 current. Provisioning creates no knowledge objects and does not materialize any
 graph data.
+
+Phase 2 ingests local BibTeX into the tracked canonical graph without writing
+objects to Anytype. The default source is the BibTeX exported from the Cosmology
+notes page into `data/sources/cosmology_notes.bib`:
+
+```bash
+uv run pipeline.py kg ingest --dry-run
+uv run pipeline.py kg ingest
+```
+
+The command writes deterministic, source-attributed records to
+`graph/entities.jsonl`, `graph/relations.jsonl`, `graph/concepts.jsonl`, and
+`graph/aliases.jsonl`. Re-running it replaces only this source's contribution;
+an unchanged source produces no file changes. BibTeX `and others` is retained as
+an incomplete literal author list rather than expanded into invented people.
+
+Assign generated records to one or more browsable graph scopes. Scope membership
+is independent of source provenance and semantic concepts, so a paper can belong
+to `My Papers`, `Euclid`, and a conference simultaneously:
+
+```bash
+uv run pipeline.py kg ingest \
+  --input data/sources/my_papers.bib \
+  --source-id "bibtex:my-papers" \
+  --scope "my-papers=portfolio:My Papers" \
+  --scope "euclid=project:Euclid"
+```
+
+The syntax is `KEY[=KIND:NAME]`. A bare key defaults to kind `collection` and a
+title-cased name. Scope records live in `graph/scopes.jsonl`; membership edges
+are added or removed idempotently when the source is re-ingested.
+
+Phase 3 enriches existing canonical Papers through NASA ADS. Configure
+`ADS_API_TOKEN` in `.env`, then preview and apply metadata updates:
+
+```bash
+uv run pipeline.py kg enrich-ads --dry-run
+uv run pipeline.py kg enrich-ads
+```
+
+ADS matching prefers DOI and falls back to arXiv ID. It adds the ADS bibcode,
+abstract, publication, citation count, keywords, full author list, and ADS
+provenance. Complete hyperauthor lists remain in canonical JSONL; Anytype receives
+only the configured first five names plus the number of additional authors.
+
+Bootstrap the researcher's complete curated publication list from the public
+ORCID record and resolve each work through ADS. Configure `ORCID_ID` and
+`ADS_API_TOKEN` in `.env`, then preview before applying:
+
+```bash
+uv run pipeline.py kg ingest-orcid --dry-run
+uv run pipeline.py kg ingest-orcid
+```
+
+ORCID duplicate source entries are collapsed to the researcher-selected work
+groups. DOI and arXiv identifiers deduplicate them against existing canonical
+Papers. Every retained work is assigned to the `My Papers` Graph Scope; works
+that ADS cannot resolve remain represented with their public ORCID metadata.
+Every ORCID work links to the canonical `Santiago Casas` Person. The same author
+reconciliation is applied to ADS-enriched Papers from other sources when their
+stored author list identifies Santiago. Papers with at most 20 authors link all
+listed coauthors; larger collaboration papers link only the first five listed
+people, excluding corporate author markers such as `Euclid Collaboration`.
+Corporate authorship is reconciled independently of ingestion source: Papers
+with an explicit Euclid Collaboration/Consortium author marker or an official
+Euclid publication-series title link to the canonical `Euclid Collaboration`
+Institution. Individual author affiliations remain a later curation step.
+
+INSPIRE provides a structured publication source for HEP and cosmology. Set
+`INSPIRE_AUTHOR_ID` in `.env` (or pass `--author`), preview the current list,
+and then apply it when the counts and changes look correct:
+
+```bash
+uv run pipeline.py kg ingest-inspire --dry-run
+uv run pipeline.py kg ingest-inspire
+```
+
+The importer uses the INSPIRE BAI behind the configured author record, fetches
+the paginated literature list, preserves INSPIRE provenance and citation counts,
+deduplicates DOI/arXiv records, and assigns them to `My Papers`. Complete author
+lists remain canonical while large collaboration papers receive bounded Person
+projection. Re-running the same source is idempotent.
+
+Generate the website bibliography from the canonical graph. The exporter is
+local and deterministic; it classifies non-Euclid papers as `personal`, Euclid
+papers with Santiago in INSPIRE's first ten author positions as `euclid_core`,
+and other Euclid papers as `euclid_collab`:
+
+```bash
+uv run pipeline.py kg export-bibtex --dry-run
+uv run pipeline.py kg export-bibtex
+```
+
+The default output is `exports/publications.bib`. Use `--output PATH` to write
+to another projection, such as the website's
+`_bibliography/INSPIRE-CiteAll.bib`, after reviewing the dry-run report.
+
+Project the canonical records into the Cosmology space after provisioning the
+latest schema:
+
+```bash
+uv run pipeline.py kg provision
+uv run pipeline.py kg materialize --dry-run
+uv run pipeline.py kg materialize
+```
+
+Materialization is idempotent and uses `canonical_id` to match Anytype objects.
+The canonical JSONL remains the source of truth. Papers, bounded author links,
+Euclid Collaboration, concepts, and Graph Scopes are projected with their
+semantic and scope-membership links.
+
+For graph questions, query the canonical data directly with local SPARQL instead
+of making many Anytype MCP object calls:
+
+```bash
+uv run pipeline.py kg query --file queries/top_euclid_papers.rq
+uv run pipeline.py kg export  # writes kg.trig with one named graph per source
+```
+
+`kg query` always builds from the current JSONL, so it cannot become stale. This
+is suitable for an agent shell tool today and can later be exposed as a small MCP
+tool accepting a read-only SPARQL query.
+
+Ask questions in natural language with the local `kg ask` command. It uses the
+live JSONL vocabulary to generate and validate SPARQL through Blablador, executes
+the query by default, and saves the final query for reuse:
+
+```bash
+export BLABLADOR_API_KEY=...
+uv run pipeline.py kg ask "Which Euclid Collaboration papers have the most citations?"
+uv run pipeline.py kg ask "How many people are in the graph?" --no-execute
+```
+
+Generated queries are stored under `queries/generated/`. The validator rejects
+projection names such as `corporate_authors` when the canonical graph uses
+`corporate_authored_by`; failed queries receive up to two repair attempts.
 
 ## Structure
 
@@ -47,9 +183,18 @@ knowledge/
 │   ├── synthesize.py
 │   ├── sync_synthesis_anytype.js
 │   ├── kg_profile.py
-│   └── provision_kg_anytype.js
+│   ├── kg_ingest.py
+│   ├── kg_orcid.py
+│   ├── kg_ads.py
+│   ├── kg_materialize.py
+│   ├── kg_rdf.py
+│   ├── kg_ask.py
+│   ├── provision_kg_anytype.js
+│   └── materialize_kg_anytype.js
 ├── ontologies/
 │   └── cosmology.yaml   # declarative KG schema and Anytype projection
+├── graph/               # tracked canonical entities, relations, concepts, scopes, aliases
+├── review/              # future merge and concept review queues
 ├── pyproject.toml       # uv project + dependencies
 ├── .env                 # API keys (gitignored)
 └── data/                # gitignored — drop input files here

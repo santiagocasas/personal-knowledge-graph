@@ -1,0 +1,22 @@
+PREFIX bibo: <http://purl.org/ontology/bibo/>
+PREFIX pkg: <https://w3id.org/personal-kg/ontology/>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?citations ?paperName ?canonicalId
+       (GROUP_CONCAT(DISTINCT ?coauthorName; separator=", ") AS ?projectedCoauthors)
+WHERE {
+  ?paper a bibo:AcademicArticle ;
+         schema:name ?paperName ;
+         pkg:canonical_id ?canonicalId ;
+         pkg:citation_count ?citations ;
+         pkg:corporate_authored_by ?collaboration .
+  ?collaboration schema:name "Euclid Collaboration" .
+  OPTIONAL {
+    ?paper pkg:authored_by ?coauthor .
+    ?coauthor schema:name ?coauthorName .
+    FILTER (?coauthor != <https://w3id.org/personal-kg/resource/person%3Aname%3As-casas>)
+  }
+}
+GROUP BY ?citations ?paperName ?canonicalId
+ORDER BY DESC(?citations)
+LIMIT 10

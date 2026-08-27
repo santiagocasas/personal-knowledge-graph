@@ -24,10 +24,12 @@
       "layout": "profile",
       "rdf_class": "foaf:Person",
       "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
         {"key": "description", "name": "Description", "format": "text"},
         {"key": "orcid", "name": "ORCID", "format": "url"},
         {"key": "affiliated_with", "name": "Affiliated with", "format": "objects"},
-        {"key": "member_of", "name": "Member of", "format": "objects"}
+        {"key": "member_of", "name": "Member of", "format": "objects"},
+        {"key": "scopes", "name": "Graph scopes", "format": "objects"}
       ]
     },
     {
@@ -37,9 +39,11 @@
       "layout": "profile",
       "rdf_class": "foaf:Organization",
       "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
         {"key": "description", "name": "Description", "format": "text"},
         {"key": "institution_kind", "name": "Institution kind", "format": "text"},
-        {"key": "ror", "name": "ROR", "format": "url"}
+        {"key": "ror", "name": "ROR", "format": "url"},
+        {"key": "scopes", "name": "Graph scopes", "format": "objects"}
       ]
     },
     {
@@ -49,16 +53,23 @@
       "layout": "basic",
       "rdf_class": "bibo:AcademicArticle",
       "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
         {"key": "description", "name": "Abstract or notes", "format": "text"},
         {"key": "doi", "name": "DOI", "format": "url"},
         {"key": "arxiv_id", "name": "arXiv ID", "format": "text"},
         {"key": "ads_bibcode", "name": "ADS bibcode", "format": "text"},
+        {"key": "ads_url", "name": "ADS URL", "format": "url"},
         {"key": "publication_year", "name": "Publication year", "format": "number"},
+        {"key": "publication", "name": "Publication", "format": "text"},
+        {"key": "citation_count", "name": "Citation count", "format": "number"},
+        {"key": "author_count", "name": "Author count", "format": "number"},
+        {"key": "ads_keywords", "name": "ADS keywords", "format": "text"},
         {"key": "authored_by", "name": "Authored by", "format": "objects"},
         {"key": "corporate_authors", "name": "Corporate authors", "format": "objects"},
         {"key": "about", "name": "About", "format": "objects"},
+        {"key": "scopes", "name": "Graph scopes", "format": "objects"},
         {"key": "source_url", "name": "Source URL", "format": "url"},
-        {"key": "author_list", "name": "Complete author list", "format": "text"}
+        {"key": "author_list", "name": "Author list preview", "format": "text"}
       ]
     },
     {
@@ -68,10 +79,12 @@
       "layout": "basic",
       "rdf_class": "fabio:Presentation",
       "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
         {"key": "description", "name": "Abstract or notes", "format": "text"},
         {"key": "presented_by", "name": "Presented by", "format": "objects"},
         {"key": "presented_at", "name": "Presented at", "format": "objects"},
         {"key": "about", "name": "About", "format": "objects"},
+        {"key": "scopes", "name": "Graph scopes", "format": "objects"},
         {"key": "source_url", "name": "Source URL", "format": "url"}
       ]
     },
@@ -82,9 +95,11 @@
       "layout": "basic",
       "rdf_class": "skos:Concept",
       "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
         {"key": "description", "name": "Definition or notes", "format": "text"},
         {"key": "broader", "name": "Broader concepts", "format": "objects"},
         {"key": "related_to", "name": "Related concepts", "format": "objects"},
+        {"key": "scopes", "name": "Graph scopes", "format": "objects"},
         {"key": "skos_uri", "name": "SKOS URI", "format": "url"}
       ]
     },
@@ -95,11 +110,27 @@
       "layout": "basic",
       "rdf_class": "schema:Event",
       "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
         {"key": "description", "name": "Description", "format": "text"},
         {"key": "start_date", "name": "Start date", "format": "date"},
         {"key": "end_date", "name": "End date", "format": "date"},
         {"key": "location", "name": "Location", "format": "text"},
-        {"key": "website", "name": "Website", "format": "url"}
+        {"key": "website", "name": "Website", "format": "url"},
+        {"key": "scopes", "name": "Graph scopes", "format": "objects"}
+      ]
+    },
+    {
+      "key": "graph_scope",
+      "name": "Graph Scope",
+      "plural_name": "Graph Scopes",
+      "layout": "basic",
+      "rdf_class": "schema:Collection",
+      "properties": [
+        {"key": "canonical_id", "name": "Canonical ID", "format": "text"},
+        {"key": "description", "name": "Description", "format": "text"},
+        {"key": "scope_kind", "name": "Scope kind", "format": "text"},
+        {"key": "source_url", "name": "Source URL", "format": "url"},
+        {"key": "members", "name": "Members", "format": "objects"}
       ]
     }
   ]

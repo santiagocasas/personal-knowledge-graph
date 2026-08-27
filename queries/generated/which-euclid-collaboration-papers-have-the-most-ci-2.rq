@@ -1,0 +1,22 @@
+# Question: Which Euclid Collaboration papers have the most citations?
+# Model: alias-code
+
+PREFIX bibo: <http://purl.org/ontology/bibo/>
+PREFIX fabio: <http://purl.org/spar/fabio/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX pkg: <https://w3id.org/personal-kg/ontology/>
+PREFIX schema: <https://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?paperName ?citations ?canonicalId
+WHERE {
+  ?paper a bibo:AcademicArticle ;
+         schema:name ?paperName ;
+         pkg:canonical_id ?canonicalId ;
+         pkg:citation_count ?citations ;
+         pkg:corporate_authored_by ?org .
+  ?org schema:name "Euclid Collaboration" .
+}
+ORDER BY DESC(?citations)
+LIMIT 20

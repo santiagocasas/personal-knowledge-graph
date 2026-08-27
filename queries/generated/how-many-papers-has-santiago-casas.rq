@@ -1,0 +1,15 @@
+# Question: How many papers has Santiago Casas?
+# Model: alias-code
+
+PREFIX bibo: <http://purl.org/ontology/bibo/>
+PREFIX fabio: <http://purl.org/spar/fabio/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX pkg: <https://w3id.org/personal-kg/ontology/>
+PREFIX schema: <https://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT (COUNT(DISTINCT ?paper) AS ?count) WHERE {
+  ?paper a bibo:AcademicArticle ;
+         pkg:authored_by <https://w3id.org/personal-kg/resource/person%3Aname%3As-casas> .
+}
