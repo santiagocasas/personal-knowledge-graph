@@ -13,3 +13,10 @@ sessions:
     events_count: 13
     claims_touched: []
     open_threads: 2
+  - id: "2026-08-28_001"
+    date: "2026-08-28"
+    summary: "Completed Graph Scope Collections and opened publication-family resolution for related conference and journal outputs."
+    turn_count: 5
+    events_count: 9
+    claims_touched: []
+    open_threads: 2

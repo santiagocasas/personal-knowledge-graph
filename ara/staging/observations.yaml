@@ -10,3 +10,36 @@ observations:
     promoted_to: "logic/solution/architecture.md:A01"
     crystallized_via: verbal-affirmation
     stale: false
+  - id: O02
+    timestamp: "2026-08-28T12:28+02:00"
+    provenance: user-revised
+    content: "Synchronize managed Anytype object relations by pulling live additions before projecting the complete canonical graph; keep canonical removals authoritative and adopt new live Concepts with deterministic canonical IDs."
+    context: "The researcher approved implementation of a safe round-trip materialization workflow for manual Anytype topic curation."
+    potential_type: architecture
+    bound_to: [N28]
+    promoted: true
+    promoted_to: "logic/solution/architecture.md:A02"
+    crystallized_via: artifact-commitment
+    stale: false
+  - id: O03
+    timestamp: "2026-08-28T13:00+02:00"
+    provenance: user-revised
+    content: "Represent each canonical Graph Scope with a derived Anytype Collection linked as its List view, with exact membership projected from canonical contains relations."
+    context: "The researcher requested a navigable list representation for My Papers rather than relying only on a basic Graph Scope object and backlinks."
+    potential_type: architecture
+    bound_to: [N30]
+    promoted: true
+    promoted_to: "logic/solution/architecture.md:A03"
+    crystallized_via: artifact-commitment
+    stale: false
+  - id: O04
+    timestamp: "2026-08-28T13:32+02:00"
+    provenance: ai-suggested
+    content: "Use layered publication resolution: merge only records sharing authoritative identifiers, retain distinct outputs in a research-work family, rank a preferred public representation, and send only ambiguous family candidates to durable human review."
+    context: "Inspection showed the similarly titled neutrino records are a non-refereed PoS conference paper and a refereed A&A article with different DOIs; the proceeding explicitly cites the journal work."
+    potential_type: architecture
+    bound_to: [N31]
+    promoted: false
+    promoted_to: null
+    crystallized_via: null
+    stale: false

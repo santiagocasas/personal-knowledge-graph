@@ -203,10 +203,14 @@ class BibtexIngestionTests(unittest.TestCase):
             self.assertIn('"name": "My Papers"', (graph / "scopes.jsonl").read_text(encoding="utf-8"))
 
             manifest = load_materialization_manifest(graph, "space:test")
-            self.assertEqual(len(manifest["objects"]), 5)
-            self.assertEqual(len(manifest["relations"]), 11)
+            self.assertEqual(len(manifest["objects"]), 6)
+            self.assertEqual(len(manifest["relations"]), 12)
             scope_object = next(item for item in manifest["objects"] if item["type_key"] == "graph_scope")
-            self.assertEqual(scope_object["relation_properties"], ["members"])
+            self.assertEqual(scope_object["relation_properties"], ["members", "list_view"])
+            collection = next(item for item in manifest["objects"] if item["type_key"] == "collection")
+            self.assertEqual(collection["name"], "My Papers list")
+            self.assertEqual(manifest["collections"][0]["canonical_id"], collection["canonical_id"])
+            self.assertEqual(len(manifest["collections"][0]["members"]), 4)
 
     def test_ads_enrichment_is_idempotent_and_projection_caps_authors(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -393,6 +397,33 @@ class BibtexIngestionTests(unittest.TestCase):
                         "properties": {"author_list": "Alpha, A.; Euclid Collaboration"},
                         "source_refs": [{"source_id": "source:reading-list"}],
                     },
+                    {
+                        "id": "paper:ads:euclid-hyphen",
+                        "type": "Paper",
+                        "rdf_type": "bibo:AcademicArticle",
+                        "name": "Euclid preparation - LXXXIV. A consortium result",
+                        "identifiers": {"ads": "2026Test....4E"},
+                        "properties": {"author_list": "Alpha, A.; Beta, B."},
+                        "source_refs": [{"source_id": "source:reading-list"}],
+                    },
+                    {
+                        "id": "paper:ads:euclid-period",
+                        "type": "Paper",
+                        "rdf_type": "bibo:AcademicArticle",
+                        "name": "Euclid. A space mission result",
+                        "identifiers": {"ads": "2026Test....5E"},
+                        "properties": {"author_list": "Alpha, A.; Beta, B."},
+                        "source_refs": [{"source_id": "source:reading-list"}],
+                    },
+                    {
+                        "id": "paper:ads:not-euclid",
+                        "type": "Paper",
+                        "rdf_type": "bibo:AcademicArticle",
+                        "name": "Euclidean geometry in cosmology",
+                        "identifiers": {"ads": "2026Test....6N"},
+                        "properties": {"author_list": "Alpha, A.; Beta, B."},
+                        "source_refs": [{"source_id": "source:reading-list"}],
+                    },
                 ]
             )
             entities_path.write_text(
@@ -415,7 +446,7 @@ class BibtexIngestionTests(unittest.TestCase):
                 ads_session=FakeAdsSession(),
             )
 
-            self.assertEqual(first["corporate_author_papers"], 2)
+            self.assertEqual(first["corporate_author_papers"], 4)
             self.assertEqual(second["changed_files"], 0)
             relations = [
                 json.loads(line)
@@ -429,7 +460,12 @@ class BibtexIngestionTests(unittest.TestCase):
             }
             self.assertEqual(
                 corporate_subjects,
-                {"paper:ads:euclid-series", "paper:ads:euclid-marker"},
+                {
+                    "paper:ads:euclid-series",
+                    "paper:ads:euclid-marker",
+                    "paper:ads:euclid-hyphen",
+                    "paper:ads:euclid-period",
+                },
             )
 
 

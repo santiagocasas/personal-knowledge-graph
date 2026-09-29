@@ -35,10 +35,7 @@ LARGE_AUTHOR_LIST_COAUTHORS = 5
 DERIVED_AUTHORS_SOURCE_ID = "derived:bounded-authors"
 DERIVED_CORPORATE_AUTHORS_SOURCE_ID = "derived:corporate-authors"
 EUCLID_COLLABORATION_ID = "institution:name:euclid-collaboration"
-EUCLID_TITLE_PATTERN = re.compile(
-    r"^euclid(?:\s+preparation)?\s*:|^euclid\s+quick\s+data\s+release\b",
-    re.IGNORECASE,
-)
+EUCLID_TITLE_PATTERN = re.compile(r"^euclid\b", re.IGNORECASE)
 
 
 class OrcidError(ValueError):

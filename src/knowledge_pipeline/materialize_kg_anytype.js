@@ -179,6 +179,42 @@ function relationPlan(manifest, index) {
   return plans;
 }
 
+function collectionPlan(manifest, index, client) {
+  var plans = [];
+  var collections = manifest.collections || [];
+  for (var i = 0; i < collections.length; i++) {
+    var item = collections[i];
+    var collection = index[item.canonical_id];
+    var unresolved = [];
+    var desiredIds = [];
+    for (var m = 0; m < item.members.length; m++) {
+      var target = index[item.members[m]];
+      if (target && target.id) desiredIds.push(target.id);
+      else unresolved.push(item.members[m]);
+    }
+    var currentRows = collection && collection.id ? client.getCollectionObjects(collection.id) : [];
+    var readError = currentRows.error || null;
+    var currentIds = [];
+    for (var c = 0; c < currentRows.length; c++) currentIds.push(currentRows[c].id);
+    desiredIds = sortedUnique(desiredIds);
+    currentIds = sortedUnique(currentIds);
+    var desiredSet = {};
+    var currentSet = {};
+    for (var d = 0; d < desiredIds.length; d++) desiredSet[desiredIds[d]] = true;
+    for (var e = 0; e < currentIds.length; e++) currentSet[currentIds[e]] = true;
+    plans.push({
+      canonical_id: item.canonical_id,
+      collection: collection,
+      add: desiredIds.filter(function (id) { return !currentSet[id]; }),
+      remove: currentIds.filter(function (id) { return !desiredSet[id]; }),
+      unresolved: sortedUnique(unresolved),
+      read_error: readError,
+      changed: !!readError || unresolved.length > 0 || !sameSet(currentIds, desiredIds)
+    });
+  }
+  return plans;
+}
+
 export function main(args) {
   args = args || {};
   if (!args.manifest) throw new Error("Pass a projection manifest with manifest=<json>");
@@ -191,7 +227,7 @@ export function main(args) {
     apiKey: env.ANYTYPE_API_KEY,
     spaceId: manifest.space_id
   });
-  var typeKeys = ["person", "institution", "paper", "talk", "concept", "event", "graph_scope"];
+  var typeKeys = ["person", "institution", "paper", "talk", "concept", "event", "graph_scope", "collection"];
   var indexed = buildIndex(client, typeKeys);
   if (indexed.duplicates.length > 0) {
     return JSON.stringify({ dry_run: dryRun, space_id: manifest.space_id, error: "duplicate canonical IDs in Anytype", duplicate_canonical_ids: indexed.duplicates });
@@ -203,10 +239,12 @@ export function main(args) {
     planned_create: 0,
     planned_update: 0,
     planned_link_update: 0,
+    planned_collection_update: 0,
     unchanged: 0,
     created: 0,
     updated: 0,
     links_updated: 0,
+    collections_updated: 0,
     errors: 0
   };
   var details = [];
@@ -276,6 +314,41 @@ export function main(args) {
       stats.errors += 1;
       details.push({ canonical_id: plan.subject_canonical_id, action: "link", properties: plan.changed_properties, ok: false, error: errorText(linkRes) });
     }
+  }
+
+  var collectionPlans = collectionPlan(manifest, indexed.byCanonicalId, client);
+  for (var q = 0; q < collectionPlans.length; q++) {
+    var collectionPlanItem = collectionPlans[q];
+    if (collectionPlanItem.changed) stats.planned_collection_update += 1;
+    if (dryRun || !collectionPlanItem.changed) continue;
+    if (!collectionPlanItem.collection || collectionPlanItem.read_error || collectionPlanItem.unresolved.length > 0) {
+      stats.errors += 1;
+      details.push({
+        canonical_id: collectionPlanItem.canonical_id,
+        action: "collection",
+        ok: false,
+        error: collectionPlanItem.read_error || ("unresolved collection members: " + collectionPlanItem.unresolved.join(", "))
+      });
+      continue;
+    }
+    var collectionOk = true;
+    if (collectionPlanItem.add.length > 0) {
+      var addRes = writeWithRetry(function () {
+        return client.addToCollection(collectionPlanItem.collection.id, collectionPlanItem.add);
+      }, retryCount, retryDelayMs);
+      collectionOk = !!(addRes && addRes.ok);
+      if (!collectionOk) details.push({ canonical_id: collectionPlanItem.canonical_id, action: "collection", ok: false, error: errorText(addRes) });
+    }
+    for (var r = 0; collectionOk && r < collectionPlanItem.remove.length; r++) {
+      var removeId = collectionPlanItem.remove[r];
+      var removeRes = writeWithRetry(function () {
+        return client.removeFromCollection(collectionPlanItem.collection.id, removeId);
+      }, retryCount, retryDelayMs);
+      collectionOk = !!(removeRes && removeRes.ok);
+      if (!collectionOk) details.push({ canonical_id: collectionPlanItem.canonical_id, action: "collection", ok: false, error: errorText(removeRes) });
+    }
+    if (collectionOk) stats.collections_updated += 1;
+    else stats.errors += 1;
   }
 
   return JSON.stringify({ dry_run: dryRun, space_id: manifest.space_id, stats: stats, details: details });

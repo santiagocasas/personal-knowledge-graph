@@ -1,0 +1,132 @@
+session:
+  id: "2026-08-28_001"
+  date: "2026-08-28"
+  started: "2026-08-28T00:27+02:00"
+  last_turn: "2026-08-28T13:32+02:00"
+  turn_count: 5
+  summary: "Completed Graph Scope Collections and opened publication-family resolution for related conference and journal outputs."
+
+events_logged:
+  - turn: 1
+    type: experiment
+    id: N27
+    routing: direct
+    provenance: ai-executed
+    summary: "Ingested 105 Cosmo-26 talks with complete structural links and zero unresolved validation findings."
+  - turn: 2
+    type: architecture
+    id: O02
+    routing: crystallized
+    provenance: user-revised
+    summary: "Committed to additive live pulls before canonical projection, with canonical-only deletion authority."
+  - turn: 2
+    type: experiment
+    id: N28
+    routing: direct
+    provenance: ai-executed
+    summary: "Implemented and tested round-trip Anytype materialization without executing a live pull."
+  - turn: 3
+    type: experiment
+    id: N29
+    routing: direct
+    provenance: ai-executed
+    summary: "Corrected 77 missing Euclid corporate-author relations and regenerated both publication bibliographies."
+  - turn: 3
+    type: architecture
+    id: O03
+    routing: crystallized
+    provenance: user-revised
+    summary: "Committed to derived Anytype Collections as navigable Graph Scope list views."
+  - turn: 3
+    type: experiment
+    id: N30
+    routing: direct
+    provenance: ai-executed
+    summary: "Provisioned and partially materialized Graph Scope Collections; live membership completion remains pending."
+  - turn: 4
+    type: experiment
+    id: N30
+    routing: direct
+    provenance: user
+    summary: "Confirmed the completed local materialization exposes the derived Collections in Anytype."
+  - turn: 5
+    type: question
+    id: N31
+    routing: direct
+    provenance: user
+    summary: "Asked how to resolve apparent duplicates that are distinct conference and journal outputs of the same research."
+  - turn: 5
+    type: architecture
+    id: O04
+    routing: staged
+    provenance: ai-suggested
+    summary: "Proposed strict identifier merges plus research-work families, preferred public records, and human review of ambiguous candidates."
+
+ai_actions:
+  - turn: 1
+    action: "Implemented the Markdown talk parser, source-scoped canonical ingestion, CLI command, documentation, and regression tests."
+    provenance: ai-executed
+    files_changed:
+      - .gitignore
+      - README.md
+      - pipeline.py
+      - src/knowledge_pipeline/kg_ingest_talks.py
+      - tests/test_kg_ingest_talks.py
+  - turn: 1
+    action: "Applied Cosmo-26 ingestion and independently validated counts, presenter coverage, missing-affiliation handling, scope completeness, idempotence, and relation integrity."
+    provenance: ai-executed
+    files_changed:
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - graph/aliases.jsonl
+      - graph/concepts.jsonl
+      - graph/scopes.jsonl
+  - turn: 2
+    action: "Implemented live Anytype relation snapshots, additive canonical merge planning, recoverable Concept adoption, phase-only modes, documentation, and tests."
+    provenance: ai-executed
+    files_changed:
+      - README.md
+      - pipeline.py
+      - src/knowledge_pipeline/kg_pull_anytype.py
+      - src/knowledge_pipeline/pull_kg_anytype.js
+      - tests/test_kg_pull_anytype.py
+  - turn: 3
+    action: "Generalized Euclid detection, applied corporate-author reconciliation, and regenerated local and website BibTeX projections."
+    provenance: ai-executed
+    files_changed:
+      - src/knowledge_pipeline/kg_orcid.py
+      - tests/test_kg_ingest.py
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - exports/publications.bib
+      - ../santiagocasas.github.io/_bibliography/INSPIRE-CiteAll.bib
+  - turn: 3
+    action: "Implemented and provisioned derived Anytype Collections for Graph Scope list views; the bounded materialization run stopped after Collection creation."
+    provenance: ai-executed
+    files_changed:
+      - README.md
+      - pipeline.py
+      - ontologies/cosmology.yaml
+      - src/knowledge_pipeline/kg_materialize.py
+      - src/knowledge_pipeline/materialize_kg_anytype.js
+
+claims_touched: []
+
+key_context:
+  - turn: 1
+    excerpt: "User requested execution, tests, ingestion, and final subagent validation."
+  - turn: 2
+    excerpt: "User approved implementation of pull-before-push round-trip materialization for manual Anytype concept assignments."
+  - turn: 3
+    excerpt: "User requested direct automated correction of Euclid publication classification and a list view for My Papers, then elected to run the remaining materialization locally."
+  - turn: 4
+    excerpt: "User confirmed the Collections are now visible and almost everything is perfect."
+  - turn: 5
+    excerpt: "User asked whether related Euclid proceedings and journal papers can only be resolved manually and what strategy research data managers use."
+
+open_threads:
+  - "Design and execute reviewable Blablador keyphrase proposals from Cosmo-26 talk titles and abstracts before deterministic concept application."
+  - "Identify the remaining imperfection in the live Graph Scope Collection workflow before making further changes."
+  - "Decide whether to implement layered publication-family resolution and preferred public representations for conference/journal output pairs."
+
+ai_suggestions_pending: []

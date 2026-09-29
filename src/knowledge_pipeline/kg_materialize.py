@@ -36,7 +36,7 @@ TYPE_RELATION_PROPERTIES = {
     "Talk": ["presented_by", "presented_at", "about", "scopes"],
     "Concept": ["broader", "related_to", "scopes"],
     "Event": ["scopes"],
-    "GraphScope": ["members"],
+    "GraphScope": ["members", "list_view"],
 }
 
 
@@ -118,6 +118,7 @@ def load_materialization_manifest(
         )
 
     projected_relations = []
+    scope_members: dict[str, list[str]] = {}
     for row in relations:
         predicate = row.get("predicate")
         if predicate not in RELATION_PROPERTIES:
@@ -135,6 +136,36 @@ def load_materialization_manifest(
                 "object": object_id,
             }
         )
+        if predicate == "contains":
+            scope_members.setdefault(subject, []).append(object_id)
+
+    collections = []
+    for scope_id, scope in sorted(by_id.items()):
+        if scope.get("type") != "GraphScope":
+            continue
+        collection_id = f"collection:{scope_id}"
+        projected.append(
+            {
+                "canonical_id": collection_id,
+                "type_key": "collection",
+                "name": f"{scope['name'].strip()} list",
+                "properties": {},
+                "relation_properties": [],
+            }
+        )
+        projected_relations.append(
+            {
+                "subject": scope_id,
+                "property_key": "list_view",
+                "object": collection_id,
+            }
+        )
+        collections.append(
+            {
+                "canonical_id": collection_id,
+                "members": sorted(set(scope_members.get(scope_id, []))),
+            }
+        )
 
     projected.sort(key=lambda row: row["canonical_id"])
     projected_relations.sort(key=lambda row: (row["subject"], row["property_key"], row["object"]))
@@ -142,4 +173,5 @@ def load_materialization_manifest(
         "space_id": space_id,
         "objects": projected,
         "relations": projected_relations,
+        "collections": collections,
     }

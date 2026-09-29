@@ -142,11 +142,13 @@ def print_kg_materialize_report(report: dict) -> None:
     print(f"  Objects to create    : {stats.get('planned_create', 0)}")
     print(f"  Objects to update    : {stats.get('planned_update', 0)}")
     print(f"  Link sets to update  : {stats.get('planned_link_update', 0)}")
+    print(f"  Collections to sync  : {stats.get('planned_collection_update', 0)}")
     print(f"  Objects unchanged    : {stats.get('unchanged', 0)}")
     if not report.get("dry_run"):
         print(f"  Objects created      : {stats.get('created', 0)}")
         print(f"  Objects updated      : {stats.get('updated', 0)}")
         print(f"  Link sets updated    : {stats.get('links_updated', 0)}")
+        print(f"  Collections updated  : {stats.get('collections_updated', 0)}")
         print(f"  Errors               : {stats.get('errors', 0)}")
 
     for row in report.get("details", []):
@@ -156,6 +158,20 @@ def print_kg_materialize_report(report: dict) -> None:
         print(f"  - {row.get('name') or row.get('canonical_id')}: {row.get('action')}{suffix}")
         if row.get("error"):
             print(f"    error: {row['error']}")
+
+
+def print_kg_pull_report(plan: dict, dry_run: bool) -> None:
+    mode = "Pull dry-run" if dry_run else "Pull"
+    print(f"\n{mode} report for {plan.get('space_id')}:")
+    print(f"  Live objects scanned : {plan.get('objects_scanned', 0)}")
+    print(f"  Concepts to adopt    : {len(plan.get('concepts', []))}")
+    print(f"  Relations to append  : {len(plan.get('relations', []))}")
+    print(f"  Unresolved live links: {len(plan.get('unresolved', []))}")
+    for row in plan.get("unresolved", []):
+        print(
+            "  - skipped "
+            f"{row['subject']} {row['property_key']} -> Anytype {row['target_anytype_id']}"
+        )
 
 
 def cmd_parse(args: argparse.Namespace) -> None:
@@ -332,6 +348,26 @@ def cmd_kg_ingest(args: argparse.Namespace) -> None:
     run(cmd)
 
 
+def cmd_kg_ingest_talks(args: argparse.Namespace) -> None:
+    cmd = [
+        sys.executable,
+        str(MODULE_DIR / "kg_ingest_talks.py"),
+        "--input",
+        str(args.input),
+        "--graph-dir",
+        str(args.graph_dir),
+        "--source-id",
+        args.source_id,
+    ]
+    if args.source_url:
+        cmd.extend(["--source-url", args.source_url])
+    for scope in args.scope:
+        cmd.extend(["--scope", scope])
+    if args.dry_run:
+        cmd.append("--dry-run")
+    run(cmd)
+
+
 def cmd_kg_enrich_ads(args: argparse.Namespace) -> None:
     cmd = [
         sys.executable,
@@ -441,16 +477,66 @@ def cmd_kg_ask(args: argparse.Namespace) -> None:
 def cmd_kg_materialize(args: argparse.Namespace) -> None:
     sys.path.insert(0, str(MODULE_DIR))
     from kg_materialize import MaterializationError, load_materialization_manifest
+    from kg_pull_anytype import PullError, apply_anytype_pull, plan_anytype_pull
     from kg_profile import ProfileError, load_profile
 
     try:
         profile = load_profile(args.profile)
+    except ProfileError as exc:
+        raise SystemExit(f"Cannot materialize graph: {exc}") from exc
+
+    graph_dir = args.graph_dir
+    temporary_graph: tempfile.TemporaryDirectory[str] | None = None
+    try:
+        if not args.push_only:
+            pull_path = MODULE_DIR / "pull_kg_anytype.js"
+            pull_cmd = [
+                runtime_path(),
+                "-e",
+                ".env",
+                "-m",
+                str(HELPER_DIR),
+                str(pull_path),
+                f"spaceId={profile['space_id']}",
+            ]
+            live_state = parse_runtime_res(run_capture(pull_cmd))
+            if live_state.get("error"):
+                raise PullError(live_state["error"])
+            plan = plan_anytype_pull(graph_dir, live_state)
+            print_kg_pull_report(plan, args.dry_run)
+
+            if args.dry_run:
+                if not args.pull_only:
+                    temporary_graph = tempfile.TemporaryDirectory(prefix="kg_pull_preview_")
+                    preview_dir = Path(temporary_graph.name)
+                    for source in graph_dir.glob("*.jsonl"):
+                        shutil.copy2(source, preview_dir / source.name)
+                    apply_anytype_pull(preview_dir, plan)
+                    graph_dir = preview_dir
+            else:
+                stamps = plan.get("stamps") or []
+                # Persist provenance first so a failed stamp can be safely retried.
+                apply_anytype_pull(graph_dir, plan)
+                if stamps:
+                    stamp_cmd = pull_cmd + [
+                        "stamps=" + json.dumps(stamps, separators=(",", ":")),
+                        "dryRun=false",
+                    ]
+                    stamp_report = parse_runtime_res(run_capture(stamp_cmd))
+                    if stamp_report.get("errors") or stamp_report.get("error"):
+                        raise PullError(
+                            stamp_report.get("error") or "failed to stamp adopted Concepts"
+                        )
+
+            if args.pull_only:
+                return
+
         manifest = load_materialization_manifest(
-            args.graph_dir,
+            graph_dir,
             profile["space_id"],
             profile.get("projection"),
         )
-    except (MaterializationError, ProfileError) as exc:
+    except (MaterializationError, PullError) as exc:
         raise SystemExit(f"Cannot materialize graph: {exc}") from exc
 
     materializer_path = MODULE_DIR / "materialize_kg_anytype.js"
@@ -498,6 +584,8 @@ def cmd_kg_materialize(args: argparse.Namespace) -> None:
         raise SystemExit(str(exc)) from exc
     if report.get("stats", {}).get("errors", 0):
         raise SystemExit(1)
+    if temporary_graph:
+        temporary_graph.cleanup()
 
 
 def main() -> None:
@@ -586,6 +674,30 @@ def main() -> None:
     )
     p_ingest.set_defaults(func=cmd_kg_ingest)
 
+    p_talks = kg_sub.add_parser("ingest-talks", help="Ingest structured conference-talk Markdown")
+    p_talks.add_argument(
+        "--input",
+        type=Path,
+        default=REPO_ROOT / "data" / "sources" / "cosmo26_talks.md",
+        help="Talk source (default: data/sources/cosmo26_talks.md)",
+    )
+    p_talks.add_argument("--graph-dir", type=Path, default=REPO_ROOT / "graph")
+    p_talks.add_argument("--source-id", default="indico:cosmo26:talks")
+    p_talks.add_argument(
+        "--source-url",
+        default="https://indico.global/event/15863/",
+        help="Source locator stored in provenance records",
+    )
+    p_talks.add_argument("--dry-run", action="store_true", help="Report changes without writing graph files")
+    p_talks.add_argument(
+        "--scope",
+        action="append",
+        default=["cosmo26=conference:Cosmo-26 2026"],
+        metavar="KEY[=KIND:NAME]",
+        help="Assign records to a graph scope; may be repeated",
+    )
+    p_talks.set_defaults(func=cmd_kg_ingest_talks)
+
     p_ads = kg_sub.add_parser("enrich-ads", help="Enrich canonical Papers from NASA ADS")
     p_ads.add_argument("--graph-dir", type=Path, default=REPO_ROOT / "graph")
     p_ads.add_argument(
@@ -672,6 +784,17 @@ def main() -> None:
     )
     p_materialize.add_argument("--graph-dir", type=Path, default=REPO_ROOT / "graph")
     p_materialize.add_argument("--dry-run", action="store_true", help="Report changes without writing to Anytype")
+    materialize_mode = p_materialize.add_mutually_exclusive_group()
+    materialize_mode.add_argument(
+        "--pull-only",
+        action="store_true",
+        help="Import additive live Anytype edits without projecting canonical data",
+    )
+    materialize_mode.add_argument(
+        "--push-only",
+        action="store_true",
+        help="Project canonical data without first importing live Anytype edits",
+    )
     p_materialize.add_argument("--retry-count", type=int, default=4, help="Retries per write when rate-limited")
     p_materialize.add_argument("--retry-delay-ms", type=int, default=1200, help="Base backoff delay (ms)")
     p_materialize.set_defaults(func=cmd_kg_materialize)

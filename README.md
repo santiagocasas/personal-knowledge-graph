@@ -63,6 +63,24 @@ The syntax is `KEY[=KIND:NAME]`. A bare key defaults to kind `collection` and a
 title-cased name. Scope records live in `graph/scopes.jsonl`; membership edges
 are added or removed idempotently when the source is re-ingested.
 
+Structured conference programs can be ingested from track-grouped Markdown.
+The Cosmo-26 source creates Talk, Person, Institution, Event, and track-level
+Concept records, links every listed author as a presenter, and assigns all
+generated objects to a conference scope:
+
+```bash
+uv run pipeline.py kg ingest-talks --dry-run
+uv run pipeline.py kg ingest-talks
+```
+
+The default source is `data/sources/cosmo26_talks.md`; the default provenance
+identifier is `indico:cosmo26:talks`, and the default scope is
+`cosmo26=conference:Cosmo-26 2026`. Missing affiliations are preserved as an
+absence of an affiliation edge rather than represented as invented institutions.
+Fine-grained concepts from talk titles and abstracts are intentionally deferred
+to a separate reviewable extraction workflow; the deterministic ingestor only
+uses the ten source-defined topic tracks.
+
 Phase 3 enriches existing canonical Papers through NASA ADS. Configure
 `ADS_API_TOKEN` in `.env`, then preview and apply metadata updates:
 
@@ -138,9 +156,29 @@ uv run pipeline.py kg materialize
 ```
 
 Materialization is idempotent and uses `canonical_id` to match Anytype objects.
+By default it first pulls additive live edits from Anytype, then projects the
+complete canonical graph back to Anytype. This protects manually added object
+relations from being overwritten by the projection. Anytype removals are not
+imported: remove relations from canonical JSONL when deletion is intended.
+
+New Concept objects created in Anytype are adopted during the pull, assigned a
+deterministic `concept:anytype:<slug>` ID, and stamped with that `canonical_id`.
+Slug collisions and links to objects without canonical IDs are reported rather
+than guessed. Use phase-only modes when needed:
+
+```bash
+uv run pipeline.py kg materialize --pull-only --dry-run
+uv run pipeline.py kg materialize --pull-only
+uv run pipeline.py kg materialize --push-only --dry-run
+uv run pipeline.py kg materialize --push-only
+```
+
 The canonical JSONL remains the source of truth. Papers, bounded author links,
 Euclid Collaboration, concepts, and Graph Scopes are projected with their
-semantic and scope-membership links.
+semantic and scope-membership links. Each Graph Scope also gets a derived
+Anytype Collection named `<scope> list`, exposed through its `List view`
+property. The Collection is an exact, navigable projection of the canonical
+`contains` relations; edit canonical scope membership when removing entries.
 
 For graph questions, query the canonical data directly with local SPARQL instead
 of making many Anytype MCP object calls:

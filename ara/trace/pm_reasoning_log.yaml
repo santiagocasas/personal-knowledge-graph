@@ -82,7 +82,32 @@ entries:
        - "Routed the implemented natural-language kg ask flow as experiment N25 because it was validated offline and exercised against the live graph."
        - "Generated the schema card from canonical JSONL rather than the Anytype profile to preserve raw predicate names such as corporate_authored_by."
        - "Recorded the Blablador HTTP 502 as an external request failure, not as a graph or query failure; the unrelated weather question was explicitly rejected as UNANSWERABLE."
-   - turn: "2026-08-26_001#9"
+    - turn: "2026-08-26_001#9"
      notes:
        - "Routed the missing-ranking investigation as experiment N26; canonical relation coverage is present, so the failure is metadata completeness rather than SPARQL filtering."
-       - "Resolved the ADS title punctuation mismatch through an explicit fallback, then recorded the canonical and Anytype enrichment as the experiment outcome rather than silently editing the record."
+        - "Resolved the ADS title punctuation mismatch through an explicit fallback, then recorded the canonical and Anytype enrichment as the experiment outcome rather than silently editing the record."
+  - turn: "2026-08-28_001#1"
+    notes:
+      - "Routed the implemented Cosmo-26 structural ingestion as experiment N27 because parser, canonical output, idempotence, and graph integrity were empirically verified."
+      - "Did not stage source counts as claims; they are reproducible experiment results bound to the tracked Markdown source and generated JSONL."
+      - "Kept fine-grained title-and-abstract concept extraction open because the approved structural-first sequence defers it to a reviewable Blablador proposal workflow."
+  - turn: "2026-08-28_001#2"
+    notes:
+      - "Crystallized O02 as architecture A02 via artifact commitment because the user-approved pull-before-push policy now has concrete implementation and tests."
+      - "Routed N28 as a resolved experiment for offline merge and CLI validation; explicitly did not claim live synchronization because no Anytype pull was run."
+      - "Kept live dry-run review open and preserved canonical JSONL as the only deletion authority."
+  - turn: "2026-08-28_001#3"
+    notes:
+      - "Routed the verified 77-Paper Euclid classification correction and regenerated BibTeX projections as resolved experiment N29."
+      - "Crystallized O03 as architecture A03 via artifact commitment because the requested Graph Scope Collection projection is implemented and provisioned."
+      - "Kept N30 open because the timed-out materialization created the Collection but did not populate or link it; the user explicitly chose to run the idempotent completion command locally."
+      - "Did not treat the timeout as a dead end because partial creation is safe and expected to resume by canonical ID."
+  - turn: "2026-08-28_001#4"
+    notes:
+      - "Resolved N30 after the user completed materialization and explicitly confirmed the derived Collections are visible."
+      - "Did not infer what remains imperfect; awaiting a concrete report before recording another event or changing implementation."
+  - turn: "2026-08-28_001#5"
+    notes:
+      - "Routed the user's duplicate-versus-related-output concern as open question N31."
+      - "Staged O04 as an architecture proposal because layered identity, family grouping, preferred display, and review policy have not yet been approved or implemented."
+      - "Did not classify the PoS proceeding as a strict duplicate: it has a distinct DOI, document type, author set, and publication venue, and explicitly cites the A&A article."

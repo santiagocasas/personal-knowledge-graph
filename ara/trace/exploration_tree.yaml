@@ -511,3 +511,110 @@ tree:
       - kg.trig
       - ADS title search for Forecast validation and Euclid
     status: resolved
+  - id: N27
+    type: experiment
+    title: Ingest Cosmo-26 conference structure
+    provenance: ai-executed
+    timestamp: "2026-08-28T00:27+02:00"
+    description: >
+      Parse the Cosmo-26 Markdown program deterministically and ingest talks,
+      listed authors, affiliations, event membership, topic tracks, aliases,
+      and conference scope links into the canonical graph before attempting
+      LLM-assisted fine-grained concept extraction.
+    result: >
+      Ingested 105 talks across 10 tracks as 442 source entities, 10 concepts,
+      206 aliases, 1,510 relations, and one Graph Scope. All 210 listed-author
+      occurrences have presenter edges; 21 explicitly missing affiliations
+      created no fake institutions. The full 26-test suite passed, a repeated
+      dry-run reported zero changed files, and independent validation found
+      no remaining findings or dangling relation endpoints.
+    evidence:
+      - data/sources/cosmo26_talks.md
+      - src/knowledge_pipeline/kg_ingest_talks.py
+      - tests/test_kg_ingest_talks.py
+      - graph/entities.jsonl
+      - graph/relations.jsonl
+      - command: uv run pipeline.py kg ingest-talks
+      - command: uv run pipeline.py kg ingest-talks --dry-run
+      - tests: 26 passed
+      - independent validation: no remaining findings
+    status: resolved
+  - id: N28
+    type: experiment
+    title: Implement round-trip Anytype materialization
+    provenance: ai-executed
+    timestamp: "2026-08-28T12:28+02:00"
+    description: >
+      Preserve manual Anytype topic and object-relation additions by reading live
+      provisioned objects before rebuilding the canonical projection, while
+      keeping relation deletion canonical-only and adopting new live Concepts.
+    result: >
+      Added a read-only Anytype snapshot, deterministic additive merge planning,
+      recoverable Concept ID stamping, pull-only and push-only modes, and a
+      pull-then-push default. Nineteen focused ingestion and round-trip tests
+      passed, CLI parsing exposed the new modes, and diff validation was clean.
+      No live Anytype or canonical pull was executed during verification.
+    evidence:
+      - src/knowledge_pipeline/kg_pull_anytype.py
+      - src/knowledge_pipeline/pull_kg_anytype.js
+      - tests/test_kg_pull_anytype.py
+      - pipeline.py
+      - command: uv run python -m unittest tests.test_kg_pull_anytype tests.test_kg_ingest tests.test_kg_ingest_talks
+      - tests: 19 passed
+    status: resolved
+  - id: N29
+    type: experiment
+    title: Correct Euclid corporate classification
+    provenance: ai-executed
+    timestamp: "2026-08-28T13:00+02:00"
+    description: >
+      Generalize Euclid title detection across punctuation variants, reconcile
+      corporate authorship in the canonical graph, and regenerate both the local
+      and website publication bibliographies.
+    result: >
+      Corrected 77 Euclid-titled Papers that lacked corporate authorship, raising
+      the canonical total to 212. Both 247-entry BibTeX projections now classify
+      38 personal, 19 Euclid core-author, and 190 Euclid collaboration entries.
+      Seventeen focused tests passed and diff validation was clean.
+    evidence:
+      - src/knowledge_pipeline/kg_orcid.py
+      - tests/test_kg_ingest.py
+      - graph/relations.jsonl
+      - exports/publications.bib
+      - command: uv run pipeline.py kg ingest-orcid
+      - tests: 17 passed
+    status: resolved
+  - id: N30
+    type: experiment
+    title: Project Graph Scope collections
+    provenance: ai-executed
+    timestamp: "2026-08-28T13:00+02:00"
+    description: >
+      Derive one navigable Anytype Collection per canonical Graph Scope, expose it
+      through a List view relation, and synchronize Collection membership exactly
+      from canonical contains relations.
+    result: >
+      Provisioning added the List view property and the first materialization run
+      created My Papers list, but the command exceeded its two-minute limit before
+      linking or populating the Collection. The user reran the idempotent
+      materialization locally and confirmed the Collections are now visible and
+      nearly all behavior is correct.
+    evidence:
+      - ontologies/cosmology.yaml
+      - src/knowledge_pipeline/kg_materialize.py
+      - src/knowledge_pipeline/materialize_kg_anytype.js
+      - command: uv run pipeline.py kg provision
+      - pending command: uv run pipeline.py kg materialize
+      - Anytype Collection: bafyreicwnxs4fpz6n4ysypjopaedtrxdheewqjirlmef36a5hbfd3sucom
+    status: resolved
+  - id: N31
+    type: question
+    title: Resolve related publication outputs
+    provenance: user
+    timestamp: "2026-08-28T13:32+02:00"
+    description: >
+      Determine how to distinguish strict duplicate records from separate outputs
+      of the same research result, such as a non-refereed conference proceeding
+      and its full refereed journal article, while keeping public publication
+      lists useful and canonical provenance complete.
+    status: open

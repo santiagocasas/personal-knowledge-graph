@@ -130,7 +130,8 @@
         {"key": "description", "name": "Description", "format": "text"},
         {"key": "scope_kind", "name": "Scope kind", "format": "text"},
         {"key": "source_url", "name": "Source URL", "format": "url"},
-        {"key": "members", "name": "Members", "format": "objects"}
+        {"key": "members", "name": "Members", "format": "objects"},
+        {"key": "list_view", "name": "List view", "format": "objects"}
       ]
     }
   ]

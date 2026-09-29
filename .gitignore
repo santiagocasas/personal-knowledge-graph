@@ -2,7 +2,10 @@
 *.env
 secrets/
 .anytype-key
-data/
+data/*
+!data/sources/
+data/sources/*
+!data/sources/cosmo26_talks.md
 __pycache__/
 *.pyc
 .venv/
